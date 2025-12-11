@@ -1,0 +1,7 @@
+node_modules/
+pg-featureserv/
+!pg-featureserv/config/pg_featureserv.toml.example
+*.log
+.env
+.DS_Store
+Thumbs.db

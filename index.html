@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>GEOTE Klima UI – semestrálka</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <!-- Leaflet.draw CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"
+  />
+
+  <link rel="stylesheet" href="./css/style.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Leaflet.draw JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+</head>
+<body>
+  <div id="app">
+
+    <aside id="sidebar">
+      <header>
+        <h1>GEOTE Klima – semestrální projekt</h1>
+        <p class="subtitle">
+          Výpočet klimatických ukazatelů pro ORP, CHKO nebo vlastní polygon.
+        </p>
+      </header>
+
+      <section class="control-section">
+        <h2>1. Prostorová jednotka</h2>
+
+        <label for="unitTypeSelect">Typ jednotky</label>
+        <select id="unitTypeSelect">
+          <option value="orp">ORP</option>
+          <option value="chko">CHKO</option>
+          <option value="custom">Vlastní polygon</option>
+        </select>
+
+        <div id="unitSelectWrapper">
+          <label for="unitSelect">Vyber jednotku</label>
+          <select id="unitSelect">
+            <option value="">Načítám…</option>
+          </select>
+        </div>
+
+        <p class="hint" id="customPolygonHint" style="display:none;">
+          Zvol „Vlastní polygon“ a v mapě použij nástroj pro kreslení polygonu.
+        </p>
+
+        <!-- ✨ GEOJSON UPLOAD -->
+        <div id="geojsonUploadWrapper" style="display:none; margin-top:10px;">
+          <label for="geojsonUpload"><strong>Nahrát GeoJSON</strong></label>
+          <input type="file" id="geojsonUpload" accept=".geojson,.json" />
+        </div>
+      </section>
+
+      <section class="control-section">
+        <h2>2. Klimatický normál & ukazatel</h2>
+
+        <label for="normalSelect">Referenční normál</label>
+        <select id="normalSelect">
+          <option value="old">Starý normál</option>
+          <option value="new">Nový normál</option>
+          <option value="future">Predikce 2050</option>
+        </select>
+
+        <label for="indicatorSelect">Klimatický ukazatel</label>
+        <select id="indicatorSelect">
+          <option value="demartonne">De Martonne aridity index</option>
+          <option value="pet">Potenciální evapotranspirace (Thornthwaite)</option>
+        </select>
+      </section>
+
+      <section class="control-section">
+        <button id="computeBtn" class="primary-btn">Vypočítat</button>
+        <p id="statusMessage" class="status"></p>
+      </section>
+
+      <section class="results-section">
+        <h2>Tabulka s normály</h2>
+        <div class="table-wrapper">
+          <table id="resultsTable">
+            <thead>
+              <tr>
+                <th>Normál</th>
+                <th>T [°C]</th>
+                <th>R [mm]</th>
+                <th>Index</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </aside>
+
+    <main id="mapContainer">
+      <div id="map"></div>
+    </main>
+
+    <aside id="rightSidebar">
+      <div id="topRightSection">
+        <section class="results-section">
+          <h2>Výsledky</h2>
+          <div id="resultsSummary" class="summary-box">
+            <p>Zatím nebyl proveden žádný výpočet.</p>
+          </div>
+        </section>
+      </div>
+
+      <div id="bottomRightSection">
+        <section class="results-section">
+          <canvas id="resultsChart"></canvas>
+        </section>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Skripty -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
+  <script src="./js/api.js"></script>
+  <script src="./js/compute.js"></script>
+  <script src="./js/charts.js"></script>
+  <script src="./js/map.js"></script>
+  <script src="./js/ui.js"></script>
+  
+
+</body>
+</html>

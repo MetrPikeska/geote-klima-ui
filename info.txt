@@ -1,0 +1,31 @@
+Cíl: Návrh a realizace uložení dat a dynamického výpočtu vybraných klimatických ukazatelů pro prostorově definované územní jednotky v prostředí prostorové geodatabáze
+
+Doba řešení:
+
+celý zimní semestr
+Požadavky na řešení: 
+
+Hodnoty pro 2 klimatické normály @ClimRisk, nový a predikovaný 2050 (data na vyžádání u mne)
+Výpočet 2 klimatických ukazatelů. Ukazatele se nesmí překrývat mezi skupinami! (nutná domluva)
+Hodnota a vývoj za jednotlivé a) ORP, b) CHKO a c) libovolný polygon
+Výstup report, tabulka, (graf) - v prostředí DB konzole
+Odevzání 
+
+Na konci semestru se předvede, za účasti celé skupiny,  funkční řešení a k němu bude odevzdána i technická  zpráva, kde bude kromě technického popisu řešení, definování pojmů, základních metadat, popis  jednotlivých klim. ukazatelů a použitých vzorců a operací, uvedeno i rozdělení rolí a zodpovědnosti v týmu.
+
+
+Název týmu 4: lorem impsum
+
+Petr Mikeska – kontaktní osoba
+
+Vojtěch Svoboda
+
+Jonáš Košťál
+
+Matouš Olšanský
+
+----------
+
+Aritidní index de Martonne
+
+Potenciální evapotranspirace
