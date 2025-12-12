@@ -55,7 +55,7 @@ ClimateApp.api = (function () {
    * - ORP polygon (geometrie z pg-featureserv)
    * - CHKO polygon (geometrie z pg-featureserv)
    */
-  async function fetchClimateForUnit(selection) {
+  async function fetchClimateForUnit(selection, onComplete = () => {}) {
 
     const startTime = performance.now();
     try {
@@ -69,6 +69,7 @@ ClimateApp.api = (function () {
       });
       const endTime = performance.now();
       const duration = (endTime - startTime).toFixed(2); // in milliseconds
+      onComplete(duration); // Call onComplete with duration
 
       const data = await res.json();
       return { ...data, duration: duration };
@@ -76,6 +77,7 @@ ClimateApp.api = (function () {
     } catch (err) {
       const endTime = performance.now();
       const duration = (endTime - startTime).toFixed(2); // in milliseconds
+      onComplete(duration); // Call onComplete with duration even on error
       console.error("Chyba backendu při výpočtu klimatických dat:", err);
       throw { error: err, duration: duration }; // Also pass duration on error
     }

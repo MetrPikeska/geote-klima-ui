@@ -1,3 +1,5 @@
 start /min node backend/server.js
-REM start /min pg-featureserv\pg_featureserv.exe serve
+cd pg-featureserv
+start /min pg_featureserv.exe serve
+cd ..
 start index.html

@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const resultsSummary = document.getElementById("resultsSummary");
   const resultsTableBody = document.querySelector("#resultsTable tbody");
   const resultsChartCanvas = document.getElementById("resultsChart");
+  const stopwatch = document.getElementById("stopwatch"); // ADDED: Get stopwatch element
 
   ClimateApp.map.initMap();
 
@@ -59,15 +60,20 @@ document.addEventListener("DOMContentLoaded", () => {
   // === Výpočet ===
   computeBtn.addEventListener("click", async () => {
     statusMessage.textContent = "Počítám…";
+    stopwatch.textContent = "Počítám čas..."; // ADDED: Indicate calculation start
 
     try {
       const selection = getCurrentSelection();
       if (!selection) {
         statusMessage.textContent = "Vyber jednotku nebo načti/nakresli polygon.";
+        stopwatch.textContent = "Čas výpočtu: 0.00 s"; // Reset if no selection
         return;
       }
 
-      const climateData = await ClimateApp.api.fetchClimateForUnit(selection);
+      // MODIFIED: Pass updateStopwatch function as callback
+      const climateData = await ClimateApp.api.fetchClimateForUnit(selection, (duration) => {
+        stopwatch.textContent = `Čas výpočtu: ${duration} ms`;
+      });
       const indicatorKey = document.getElementById("indicatorSelect").value;
 
       const filteredNormals = climateData.normals.filter(n => n.T != null && n.R != null);
@@ -96,6 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error(err);
       statusMessage.textContent = "Chyba při výpočtu.";
+      stopwatch.textContent = "Čas výpočtu: Chyba"; // Indicate error on stopwatch
     }
   });
 
