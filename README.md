@@ -1,68 +1,71 @@
-# GEOTE Klima – Semester Project
+# GEOTE Climate UI – Semester Project
 
-Application for calculating climate indicators.
+![GitHub last commit](https://img.shields.io/github/last-commit/MetrPikeska/geote-klima-ui)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-## Project Description
+## Project Overview
 
-**GEOTE Klima** is a web application developed as part of a semester project, which allows users to analyze and visualize climate indicators for selected administrative units (municipalities with extended powers - ORP, protected landscape areas - CHKO) or user-defined geographic polygons in the Czech Republic. The application uses PostGIS for advanced spatial analysis and provides a comprehensive view of historical and predicted climate normals.
+**GEOTE Climate UI** is a web application designed as a semester project for analyzing and visualizing climate indicators. It allows users to study climate data for pre-defined administrative units (ORP - Municipalities with Extended Powers, CHKO - Protected Landscape Areas) or custom-drawn geographic polygons within the Czech Republic. The application leverages PostGIS for robust spatial analysis and provides insights into historical and projected climate normals.
 
-## Features
+## Key Features
 
--   **Selection of Spatial Units:** Users can choose between predefined units (ORP, CHKO) or draw their own polygon directly on the map.
--   **Interactive Map:** Implementation of Leaflet.js with polygon drawing support (Leaflet.draw) for easy interaction with geographic data.
--   **Climate Normals:** Calculations can be performed for three reference climate normals:
-    -   **Old Normal:** Data up to 1990.
-    -   **New Normal:** Data from the period 1991–2020.
-    -   **Prediction 2050:** Predicted data from 2041.
--   **Climate Indicators:** The application supports the calculation of the following indicators:
+-   **Flexible Spatial Unit Selection:** Choose between predefined administrative units (ORP, CHKO) or define custom areas using interactive drawing tools on the map.
+-   **Interactive Map Interface:** Powered by Leaflet.js, offering a dynamic map experience with integrated polygon drawing capabilities via Leaflet.draw.
+-   **Comprehensive Climate Normals:** Perform calculations across various reference climate periods:
+    -   **Old Normal:** Based on historical data up to 1990.
+    -   **New Normal:** Utilizes data from the period 1991–2020.
+    -   **Prediction 2050:** Forecasted data from 2041 onwards.
+-   **Diverse Climate Indicators:** Supports the calculation and visualization of:
     -   De Martonne Aridity Index.
     -   Potential Evapotranspiration (Thornthwaite).
--   **Visualization of Results:** Results are presented in clear tables (in the left panel) and interactive line graphs (in the right panel – Chart.js).
--   **Optimized Calculations:** De Martonne and PET indices are primarily loaded directly from the database if pre-calculated, otherwise they are calculated on the client side.
+-   **Intuitive Results Visualization:** Presents analysis outcomes in clear, organized tables (left sidebar) and dynamic, interactive line graphs (right sidebar) powered by Chart.js.
+-   **Optimized Data Processing:** De Martonne and PET indices are efficiently loaded directly from the PostgreSQL database when pre-calculated, falling back to client-side computation otherwise.
 
-## Technology
+## Technologies Used
 
-**Frontend:**
--   HTML5
--   CSS3 (`./css/style.css`)
--   JavaScript (`./js/api.js`, `./js/charts.js`, `./js/compute.js`, `./js/map.js`, `./js/ui.js`)
--   Leaflet.js (interactive map)
--   Leaflet.draw (polygon drawing)
--   Chart.js (graphs)
+### Frontend
+-   HTML5, CSS3, JavaScript (Vanilla JS modules for API, charts, compute, map, UI logic)
+-   [Leaflet.js](https://leafletjs.com/) for interactive mapping.
+-   [Leaflet.draw](https://leaflet.github.io/Leaflet.draw/) for custom polygon creation.
+-   [Chart.js](https://www.chartjs.org/) for data visualization.
 
-**Backend:**
--   Node.js
--   Express.js (web framework)
--   CORS (Cross-Origin Resource Sharing)
--   Body-parser (request processing)
+### Backend
+-   [Node.js](https://nodejs.org/) with [Express.js](https://expressjs.com/) for handling climate calculations.
+-   `cors` for Cross-Origin Resource Sharing.
+-   `body-parser` for parsing incoming request bodies.
 
-**Database:**
--   PostgreSQL with PostGIS extension for spatial queries and analysis.
+### Database & Geospatial Services
+-   [PostgreSQL](https://www.postgresql.org/) with [PostGIS](https://postgis.net/) extension for advanced spatial data management and queries.
+-   [pg-featureserv](https://github.com/CrunchyData/pg_featureserv) as an OGC API Features server for serving spatial data collections.
 
-## Installation and Launch
+## Getting Started
+
+Follow these steps to set up and run the project on your local machine.
 
 ### Prerequisites
 
-Before you start, make sure you have the following installed:
--   Node.js (including npm)
--   PostgreSQL with PostGIS
+Ensure you have the following software installed on your system:
 
-### Quick Start (Windows)
+-   **Node.js** (LTS version recommended) with `npm` (Node Package Manager).
+-   **PostgreSQL** (version 12+) with the **PostGIS** extension installed and enabled in your database.
 
-For quick launching and shutting down the project on Windows, the following batch files have been created:
+### 1. Database Setup
 
-1.  **Launch Project:**
-    *   Ensure all prerequisites are met (Node.js dependencies in `backend/` are installed and the PostgreSQL server is running with the `klima` database).
-    *   Run the `start.bat` file.
-    *   This file will automatically start the backend server (Node.js) and the PostgreSQL Feature Server in minimized windows and open `index.html` in your default browser.
+1.  **Create Database:** Create a PostgreSQL database named `klima`. If you wish to use a different name, you'll need to update the configuration files accordingly.
+    ```sql
+    CREATE DATABASE klima;
+    ```
+2.  **Enable PostGIS:** Connect to your `klima` database and enable the PostGIS extension.
+    ```sql
+    -- Connect to klima database
+    \c klima
+    CREATE EXTENSION postgis;
+    ```
+3.  **Database User:** Ensure you have a PostgreSQL user (e.g., `postgres` with password `master`) that has access to the `klima` database. Update credentials in `backend/db.js` and `pg-featureserv/config/pg_featureserv.toml` if yours differ.
 
-2.  **Shut Down Project:**
-    *   Run the `stop.bat` file.
-    *   This file will terminate the running Node.js server and PostgreSQL Feature Server processes.
+### 2. Backend Server Setup
 
-### Backend Setup
-
-1.  Navigate to the `backend` folder:
+1.  Navigate to the `backend` directory:
     ```bash
     cd backend
     ```
@@ -70,85 +73,118 @@ For quick launching and shutting down the project on Windows, the following batc
     ```bash
     npm install
     ```
-3.  Ensure your PostgreSQL server is running and you have a database named `klima`. If you are using different credentials or a database name, modify the `backend/db.js` file.
+3.  Verify database connection settings in `backend/db.js`:
     ```javascript
     // backend/db.js
     const pool = new Pool({
       host: "localhost",
       user: "postgres",
-      password: "master",   // modify if you have a different password
+      password: process.env.DB_PASSWORD || "master", // Consider using environment variables for sensitive info
       database: "klima",
       port: 5432
     });
     ```
+    It's highly recommended to use environment variables for sensitive information like database passwords (e.g., `process.env.DB_PASSWORD`).
 
-### PostgreSQL Feature Server Setup
+### 3. PostgreSQL Feature Server (`pg-featureserv`) Setup
 
-Since `pg-featureserv` is not included in the repository, you need to download it separately:
+`pg-featureserv` is distributed as a standalone executable. It is included in this repository for convenience.
 
-1.  **Download `pg-featureserv`:**
-    *   Download the appropriate release of `pg-featureserv` for your operating system from its official GitHub releases page (e.g., [https://github.com/CrunchyData/pg_featureserv/releases](https://github.com/CrunchyData/pg_featureserv/releases)).
-    *   Extract the contents of the downloaded archive into the project\'s root directory. Ensure that the `pg_featureserv.exe` (or equivalent executable) and the `config/` directory are correctly placed relative to the project root. The expected path for the executable is `pg-featureserv/pg_featureserv.exe`.
+1.  **Configuration:** The configuration file is located at `pg-featureserv/config/pg_featureserv.toml`. It's pre-configured for `HttpPort = 9000` and `DbConnection = "postgresql://postgres:master@localhost:5432/klima"`.
+    *   **Important:** If your PostgreSQL credentials or database name differ, you **must** update the `DbConnection` string in `pg-featureserv/config/pg_featureserv.toml`.
 
-2.  **Configure `pg-featureserv`:**
-    *   Navigate to the `pg-featureserv/config/` folder and copy the example configuration file:
-        ```bash
-        cd pg-featureserv/config/
-        copy pg_featureserv.toml.example pg_featureserv.toml
-        ```
-    *   Open `pg_featureserv.toml` in a text editor and modify the `connstring` in the `[database]` section to match your PostgreSQL database settings (e.g., username and password). Example:
-        ```toml
-        [database]
-        connstring = "host=localhost port=5432 user=postgres password=master dbname=klima"
-        ```
-        Ensure that `dbname` matches your database name (`klima`).
+### 4. Running the Application
+
+#### On Windows (Recommended for quick start)
+
+1.  **Start:** From the project root, simply run:
+    ```bash
+    .\start.bat
+    ```
+    This script will:
+    *   Start the Node.js backend server (minimized).
+    *   Change directory into `pg-featureserv` and start `pg_featureserv.exe serve` (minimized).
+    *   Open `index.html` in your default web browser.
+2.  **Stop:** To shut down both servers, run:
+    ```bash
+    .\stop.bat
+    ```
+
+#### On Linux/macOS (Manual Steps)
+
+For non-Windows environments, you will need to start the components manually:
+
+1.  **Start Node.js Backend:**
+    ```bash
+    cd backend
+    node server.js
+    # Keep this terminal open or run in background (e.g., using `nohup node server.js &`)
+    cd ..
+    ```
+2.  **Start pg-featureserv:**
+    *   Ensure the `pg-featureserv` executable has execute permissions (`chmod +x pg-featureserv/pg_featureserv.exe`).
+    *   From the project root, run:
+    ```bash
+    cd pg-featureserv
+    ./pg_featureserv serve
+    # Keep this terminal open or run in background
+    cd ..
+    ```
+3.  **Open Frontend:** Open `index.html` in your web browser.
+    ```bash
+    # Example for Linux, might vary
+    xdg-open index.html
+    # Example for macOS
+    open index.html
+    ```
 
 ### Git Ignoring
 
-- The `.gitignore` file has been created to automatically ignore files and folders that should not be part of the repository, such as `node_modules/`, `pg-featureserv/pg_featureserv.exe`, PostgreSQL Feature Server configuration, log files, and `.env` files.
+The `.gitignore` file is configured to exclude development-specific files and sensitive information, ensuring a clean and manageable repository.
 
 ## Usage
 
-1.  **Select Spatial Unit:**
-    -   Choose "ORP", "CHKO", or "Custom Polygon".
-    -   For "ORP" or "CHKO", select a specific unit from the dropdown list.
-    -   For "Custom Polygon", use the drawing tools on the map (top right) to create your own polygon.
-2.  **Select Climate Normal and Indicator:**
-    -   Choose "Reference Normal" (Old, New, Prediction 2050).
-    -   Choose "Climate Indicator" (De Martonne Aridity Index, Potential Evapotranspiration).
-3.  **Calculate:**
-    -   Click the "Calculate" button.
-4.  **View Results:**
-    -   **Left Panel:** Displays a table with an overview of climate normals.
-    -   **Right Panel:** The top section shows a summary of results, and the bottom section contains a line graph visualizing the climate indicator.
+1.  **Select Spatial Unit:** Choose between "ORP", "CHKO", or "Custom Polygon". For predefined units, select from the dropdown. For custom polygons, use the drawing tools on the map.
+2.  **Select Climate Normal and Indicator:** Choose your desired "Reference Normal" (Old, New, Prediction 2050) and "Climate Indicator" (De Martonne Aridity Index, Potential Evapotranspiration).
+3.  **Calculate:** Click the "Calculate" button to process the data.
+4.  **View Results:** Results are displayed in a table in the left panel, a summary box in the top-right, and an interactive line graph in the bottom-right panel.
 
 ## Project Structure
 
 ```
 .
-├── .gitignore                  # Git ignore file
-├── index.html                  # Main HTML file for the frontend
-├── info.txt                    # Information file
-├── opalena.geojson             # GeoJSON data file
-├── README.md                   # Project README file
-├── start.bat                   # Batch file to start the application
-├── stop.bat                    # Batch file to stop the application
-├── backend/                    # Folder with the Node.js backend server
-│   ├── db.js                   # PostgreSQL database connection configuration
-│   ├── package-lock.json       # Node.js package lock file
-│   ├── package.json            # Dependencies and scripts for the backend
-│   └── server.js               # Main backend server file (Express.js)
-├── css/                        # Folder for CSS styles
-│   └── style.css               # Main application styles
-├── js/                         # Folder for frontend JavaScript modules
-│   ├── api.js                  # Module for communication with the backend API
-│   ├── charts.js               # Module for working with Chart.js graphs
-│   ├── compute.js              # Module for calculation logic
-│   ├── map.js                  # Module for map initialization and interaction (Leaflet)
-│   └── ui.js                   # Module for managing the user interface and events
-└── pg-featureserv/             # PostgreSQL Feature Server directory
-    ├── assets/                 # Assets for pg-featureserv
-    ├── config/                 # Configuration files for pg-featureserv
-    ├── LICENSE.md              # License file for pg-featureserv
-    ├── pg_featureserv.exe      # Executable for pg-featureserv
-    └── README.md               # README for pg-featureserv
+├── .gitignore                  # Specifies intentionally untracked files to ignore
+├── index.html                  # Main HTML file for the frontend user interface
+├── info.txt                    # Supplementary information file
+├── opalena.geojson             # Sample GeoJSON data file
+├── README.md                   # Project documentation and setup guide
+├── start.bat                   # Windows batch script to start the application components
+├── stop.bat                    # Windows batch script to stop the application components
+├── backend/                    # Node.js Express backend server for climate calculations
+│   ├── db.js                   # Database connection configuration for Node.js
+│   ├── package-lock.json       # Records the exact dependency tree
+│   ├── package.json            # Defines project metadata and dependencies
+│   └── server.js               # Main Express server application
+├── css/                        # Contains Cascading Style Sheets for the application
+│   └── style.css               # Core styles for the user interface
+├── js/                         # JavaScript modules for frontend logic
+│   ├── api.js                  # Handles communication with OGC API Features and Node backend
+│   ├── charts.js               # Manages chart rendering and data visualization with Chart.js
+│   ├── compute.js              # Contains climate indicator computation logic
+│   ├── map.js                  # Initializes and manages map interactions using Leaflet
+│   └── ui.js                   # Manages user interface elements and event handling
+└── pg-featureserv/             # PostgreSQL Feature Server (Crunchy Data pg_featureserv)
+    ├── assets/                 # Static assets for the pg-featureserv web interface
+    ├── config/                 # Configuration files for pg_featureserv
+    ├── LICENSE.md              # License details for pg_featureserv
+    ├── pg_featureserv.exe      # Executable application for the feature server
+    └── README.md               # Documentation for pg_featureserv
+```
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](#) file for details. (Note: A `LICENSE.md` file needs to be created in the root directory if not already present.)
+
+## Contributing
+
+Contributions are welcome! Please feel free to open issues or submit pull requests. For major changes, please open an issue first to discuss what you would like to change.

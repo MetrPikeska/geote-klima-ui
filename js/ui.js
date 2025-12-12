@@ -1,5 +1,5 @@
 // === ui.js ===
-// Uživatelské rozhraní, ovládání a logika aplikace
+// User interface, controls, and application logic
 
 window.ClimateApp = window.ClimateApp || {};
 
@@ -21,14 +21,32 @@ document.addEventListener("DOMContentLoaded", () => {
   const resultsSummary = document.getElementById("resultsSummary");
   const resultsTableBody = document.querySelector("#resultsTable tbody");
   const resultsChartCanvas = document.getElementById("resultsChart");
-  const stopwatch = document.getElementById("stopwatch"); // ADDED: Get stopwatch element
+  const stopwatch = document.getElementById("stopwatch"); // Get stopwatch element
+
+  let stopwatchInterval; // ADDED: Global interval variable
+  let calculationStartTime; // ADDED: To store start time for running stopwatch
+
+  function startStopwatch() { // ADDED: Start stopwatch function
+    stopStopwatch(); // Clear any existing interval
+    calculationStartTime = performance.now();
+    stopwatch.textContent = "Calculating time..."; // Initial message
+    stopwatchInterval = setInterval(() => {
+      const elapsedTime = (performance.now() - calculationStartTime).toFixed(2);
+      stopwatch.textContent = `Calculating time: ${elapsedTime} ms`;
+    }, 100); // Update every 100 milliseconds
+  }
+
+  function stopStopwatch() { // ADDED: Stop stopwatch function
+    clearInterval(stopwatchInterval);
+    stopwatchInterval = null;
+  }
 
   ClimateApp.map.initMap();
 
   loadUnits("orp");
   loadUnits("chko");
 
-  // === Přepínání typu jednotky ===
+  // === Unit type switching ===
   unitTypeSelect.addEventListener("change", () => {
     const type = unitTypeSelect.value;
 
@@ -44,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // === Výběr ORP/CHKO ===
+  // === ORP/CHKO selection ===
   unitSelect.addEventListener("change", () => {
     const type = unitTypeSelect.value;
     const id = unitSelect.value;
@@ -57,22 +75,24 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // === Výpočet ===
+  // === Calculation ===
   computeBtn.addEventListener("click", async () => {
-    statusMessage.textContent = "Počítám…";
-    stopwatch.textContent = "Počítám čas..."; // ADDED: Indicate calculation start
+    statusMessage.textContent = "Calculating..."; // Translated
+    startStopwatch(); // ADDED: Start the running stopwatch
 
     try {
       const selection = getCurrentSelection();
       if (!selection) {
-        statusMessage.textContent = "Vyber jednotku nebo načti/nakresli polygon.";
-        stopwatch.textContent = "Čas výpočtu: 0.00 s"; // Reset if no selection
+        statusMessage.textContent = "Select a unit or load/draw a polygon."; // Translated
+        stopStopwatch(); // ADDED: Stop stopwatch on no selection
+        stopwatch.textContent = "Calculation time: 0.00 s"; // Reset if no selection
         return;
       }
 
-      // MODIFIED: Pass updateStopwatch function as callback
+      // Pass updateStopwatch function as callback
       const climateData = await ClimateApp.api.fetchClimateForUnit(selection, (duration) => {
-        stopwatch.textContent = `Čas výpočtu: ${duration} ms`;
+        stopStopwatch(); // ADDED: Stop the running stopwatch
+        stopwatch.textContent = `Calculation time: ${duration} ms`;
       });
       const indicatorKey = document.getElementById("indicatorSelect").value;
 
@@ -91,22 +111,23 @@ document.addEventListener("DOMContentLoaded", () => {
         resultsChartCanvas,
         results,
         indicatorKey,
-        selection.label || "Vlastní polygon",
+        selection.label || "Custom Polygon", // Translated
         indicatorKey === "demartonne"
           ? "De Martonne aridity index"
-          : "Potenciální evapotranspirace"
+          : "Potential Evapotranspiration"
       );
 
-      statusMessage.textContent = "Výpočet dokončen.";
+      statusMessage.textContent = "Calculation complete."; // Translated
 
     } catch (err) {
       console.error(err);
-      statusMessage.textContent = "Chyba při výpočtu.";
-      stopwatch.textContent = "Čas výpočtu: Chyba"; // Indicate error on stopwatch
+      statusMessage.textContent = "Calculation error."; // Translated
+      stopStopwatch(); // ADDED: Stop stopwatch on error
+      stopwatch.textContent = "Calculation time: Error"; // Indicate error on stopwatch
     }
   });
 
-  // === Funkce ===
+  // === Functions ===
 
   async function loadUnits(type) {
     try {
@@ -116,7 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
         populateUnitSelect(type);
       }
     } catch (err) {
-      console.error("Chyba při načítání jednotek:", err);
+      console.error("Error loading units:", err);
     }
   }
 
@@ -126,8 +147,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const defaultOpt = document.createElement("option");
     defaultOpt.value = "";
-    defaultOpt.textContent = "— vyber —";
+    defaultOpt.textContent = "— select —"; // Translated
     unitSelect.appendChild(defaultOpt);
+
+    // Sort units alphabetically by label
+    units.sort((a, b) => a.label.localeCompare(b.label)); // ADDED: Sorting
 
     units.forEach(u => {
       const opt = document.createElement("option");
@@ -144,7 +168,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!ClimateApp.state.customPolygon) return null;
       return {
         type: "custom",
-        label: "Vlastní polygon",
+        label: "Custom Polygon", // Translated
         geometry: ClimateApp.state.customPolygon
       };
     }
@@ -169,17 +193,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const indicatorName =
       indicatorKey === "demartonne"
         ? "De Martonne aridity index"
-        : "Potenciální evapotranspirace (Thornthwaite)";
+        : "Potential Evapotranspiration (Thornthwaite)";
 
-    html += `<p><strong>${climateData.unitName || "vybraná jednotka"}</strong></p>`;
-    html += `<p>Vybraný ukazatel: <strong>${indicatorName}</strong></p>`;
+    html += `<p><strong>${climateData.unitName || "selected unit"}</strong></p>`; // Translated
+    html += `<p>Selected indicator: <strong>${indicatorName}</strong></p>`; // Translated
 
     if (diffs.oldNew) {
-      html += `<p>Nový - Starý: ΔT = ${diffs.oldNew.deltaT?.toFixed(2)}, ΔR = ${diffs.oldNew.deltaR?.toFixed(1)}, ΔIndex = ${diffs.oldNew.deltaIndex?.toFixed(2)}</p>`;
+      html += `<p>New - Old: ΔT = ${diffs.oldNew.deltaT?.toFixed(2)}, ΔR = ${diffs.oldNew.deltaR?.toFixed(1)}, ΔIndex = ${diffs.oldNew.deltaIndex?.toFixed(2)}</p>`; // Translated
     }
 
     if (diffs.newFuture) {
-      html += `<p>Predikce - Nový: ΔT = ${diffs.newFuture.deltaT?.toFixed(2)}, ΔR = ${diffs.newFuture.deltaR?.toFixed(1)}, ΔIndex = ${diffs.newFuture.deltaIndex?.toFixed(2)}</p>`;
+      html += `<p>Prediction - New: ΔT = ${diffs.newFuture.deltaT?.toFixed(2)}, ΔR = ${diffs.newFuture.deltaR?.toFixed(1)}, ΔIndex = ${diffs.newFuture.deltaIndex?.toFixed(2)}</p>`; // Translated
     }
 
     container.innerHTML = html;

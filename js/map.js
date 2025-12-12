@@ -1,5 +1,5 @@
 // === map.js ===
-// Modul pro mapu a kreslení polygonů
+// Module for map and polygon drawing
 
 window.ClimateApp = window.ClimateApp || {};
 
@@ -11,7 +11,7 @@ ClimateApp.map = (function () {
   let drawControl;
   let unitLayer;
 
-  // === DEFINICE S-JTSK (EPSG:5514) pro proj4 ===
+  // === S-JTSK (EPSG:5514) definition for proj4 ===
   if (typeof proj4 !== "undefined") {
     proj4.defs(
       "EPSG:5514",
@@ -20,10 +20,10 @@ ClimateApp.map = (function () {
     );
   }
 
-  // === KONVERZE GEOJSON 5514 -> WGS84 (pouze pokud jsou souřadnice mimo rozsah WGS84) ===
+  // === GEOJSON 5514 -> WGS84 CONVERSION (only if coordinates are outside WGS84 range) ===
   function convertToWGS84IfNeeded(geojson) {
 
-    // WGS84 má lon -180 až 180, lat -90 až 90
+    // WGS84 has lon -180 to 180, lat -90 to 90
     function looksLikeWGS84(coords) {
       return coords.every(ring =>
         ring.every(([x, y]) =>
@@ -42,7 +42,7 @@ ClimateApp.map = (function () {
       );
     }
 
-    // Pokud geojson není feature → přeskočit
+    // If geojson is not a feature → skip
     if (geojson.type !== "Feature") return geojson;
 
     const geom = geojson.geometry;
@@ -64,7 +64,7 @@ ClimateApp.map = (function () {
     return geojson;
   }
 
-  // === Inicializace mapy ===
+  // === Map Initialization ===
   function initMap() {
     map = L.map("map", {
       center: [49.8, 15.5],
@@ -75,6 +75,8 @@ ClimateApp.map = (function () {
     baseLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19
     }).addTo(map);
+
+    L.control.scale().addTo(map); // ADDED: Scale control
 
     drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
@@ -103,7 +105,7 @@ ClimateApp.map = (function () {
 
     map.addControl(drawControl);
 
-    // === Po nakreslení polygonu ===
+    // === After drawing a polygon ===
     map.on(L.Draw.Event.CREATED, event => {
       const layer = event.layer;
 
@@ -113,11 +115,11 @@ ClimateApp.map = (function () {
       ClimateApp.state.customPolygon = layer.toGeoJSON();
     });
 
-    // Aktivujeme upload
+    // Enable upload
     enableGeoJSONUpload();
   }
 
-  // === Zobrazení polygonu ORP/CHKO ===
+  // === Displaying ORP/CHKO polygon ===
   function showUnitGeometry(geom) {
 
     if (unitLayer) {
@@ -136,7 +138,7 @@ ClimateApp.map = (function () {
     map.fitBounds(unitLayer.getBounds());
   }
 
-  // === Nahrání GeoJSON ===
+  // === GeoJSON Upload ===
   function enableGeoJSONUpload() {
     const input = document.getElementById("geojsonUpload");
     if (!input) return;
@@ -151,20 +153,20 @@ ClimateApp.map = (function () {
         try {
           let geojson = JSON.parse(event.target.result);
 
-          // 🟦 FeatureCollection → vezmeme první feature
+          // 🟦 FeatureCollection → take the first feature
           if (geojson.type === "FeatureCollection") {
             if (!geojson.features || geojson.features.length === 0) {
-              alert("FeatureCollection neobsahuje žádné prvky.");
+              alert("FeatureCollection contains no features.");
               return;
             }
             geojson = geojson.features[0];
             console.log("Converted FeatureCollection → Feature");
           }
 
-          // 🟦 Konverze S-JTSK → WGS84 jen pokud to není WGS
+          // 🟦 Convert S-JTSK → WGS84 only if it's not WGS
           geojson = convertToWGS84IfNeeded(geojson);
 
-          // 🟦 Vykreslení
+          // 🟦 Render
           drawnItems.clearLayers();
 
           const layer = L.geoJSON(geojson, {
@@ -175,13 +177,13 @@ ClimateApp.map = (function () {
             }
           }).addTo(drawnItems);
 
-          // 🟦 Uložit do app state
+          // 🟦 Save to app state
           ClimateApp.state.customPolygon = geojson;
 
           map.fitBounds(layer.getBounds());
 
         } catch (err) {
-          alert("Soubor není platný GeoJSON.");
+          alert("File is not a valid GeoJSON.");
           console.error(err);
         }
       };

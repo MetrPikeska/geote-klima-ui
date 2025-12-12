@@ -1,5 +1,5 @@
 // === api.js ===
-// Komunikace s OGC API Features + Node backend pro klimatické výpočty
+// Communication with OGC API Features + Node backend for climate calculations
 
 window.ClimateApp = window.ClimateApp || {};
 
@@ -12,7 +12,7 @@ ClimateApp.config = {
 ClimateApp.api = (function () {
 
   /**
-   * Načte seznam ORP nebo CHKO z pg-featureserv
+   * Fetches a list of ORP or CHKO units from pg-featureserv
    */
   async function fetchUnits(type) {
     let collectionId;
@@ -50,10 +50,10 @@ ClimateApp.api = (function () {
 
 
   /**
-   * ON-THE-FLY výpočet pro:
-   * - vlastní polygon
-   * - ORP polygon (geometrie z pg-featureserv)
-   * - CHKO polygon (geometrie z pg-featureserv)
+   * ON-THE-FLY calculation for:
+   * - custom polygon
+   * - ORP polygon (geometry from pg-featureserv)
+   * - CHKO polygon (geometry from pg-featureserv)
    */
   async function fetchClimateForUnit(selection, onComplete = () => {}) {
 
@@ -78,7 +78,7 @@ ClimateApp.api = (function () {
       const endTime = performance.now();
       const duration = (endTime - startTime).toFixed(2); // in milliseconds
       onComplete(duration); // Call onComplete with duration even on error
-      console.error("Chyba backendu při výpočtu klimatických dat:", err);
+      console.error("Backend error during climate data calculation:", err);
       throw { error: err, duration: duration }; // Also pass duration on error
     }
   }

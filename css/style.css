@@ -1,6 +1,6 @@
 /* This is a CSS file */
-*,
-*::before,
+*, 
+*::before, 
 *::after {
   box-sizing: border-box;
 }
@@ -14,7 +14,7 @@ body {
 }
 
 body {
-  overflow: hidden; /* žádné globální scroll bary */
+  overflow: hidden; /* no global scrollbars */
 }
 
 #app {
@@ -170,7 +170,7 @@ select:focus {
 /* RESULTS */
 
 .results-section {
-  /* Removed flex: 1 and min-height: 0 from here as it\`s now handled by the parent sections */
+  /* Removed flex: 1 and min-height: 0 from here as it`s now handled by the parent sections */
   display: flex;
   flex-direction: column;
 }
@@ -219,7 +219,7 @@ select:focus {
   max-height: 50%; /* Occupy half of the vertical space */
 }
 
-/* MAPA */
+/* MAP */
 
 #mapContainer {
   flex: 1;
@@ -231,7 +231,7 @@ select:focus {
   inset: 0;
 }
 
-/* menší obrazovky – sidebar nahoře */
+/* smaller screens – sidebar on top */
 
 @media (max-width: 900px) {
   #app {

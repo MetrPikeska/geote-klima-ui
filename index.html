@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="cs">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>GEOTE Klima UI – semestrální práce</title>
+  <title>GEOTE Climate UI – Semester Project</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Leaflet CSS -->
@@ -33,69 +33,70 @@
 
     <aside id="sidebar">
       <header>
-        <h1>GEOTE Klima – semestrální projekt</h1>
+        <h1>GEOTE Climate – Semester Project</h1>
         <p class="subtitle">
-          Výpočet klimatických ukazatelů pro ORP, CHKO nebo vlastní polygon.
+          Database system for climate indicator analysis
         </p>
       </header>
 
       <section class="control-section">
-        <h2>1. Prostorová jednotka</h2>
+        <h2>1. Spatial Unit</h2>
 
-        <label for="unitTypeSelect">Typ jednotky</label>
+        <label for="unitTypeSelect">Unit Type</label>
         <select id="unitTypeSelect">
           <option value="orp">ORP</option>
-          <option value="chko">CHKO</option>
-          <option value="custom">Vlastní polygon</option>
+          <option value="chko" selected>CHKO</option>
+          <option value="custom">Custom Polygon</option>
         </select>
 
         <div id="unitSelectWrapper">
-          <label for="unitSelect">Vyber jednotku</label>
+          <label for="unitSelect">Select Unit</label>
           <select id="unitSelect">
-            <option value="">Načítám…</option>
+            <option value="">Loading…</option>
           </select>
         </div>
 
         <p class="hint" id="customPolygonHint" style="display:none;">
-          Zvol „Vlastní polygon“ a v mapě použij nástroj pro kreslení polygonu.
+          Select "Custom Polygon" and use the drawing tool on the map.
         </p>
 
         <!-- GEOJSON UPLOAD -->
         <div id="geojsonUploadWrapper" style="display:none; margin-top:10px;">
-          <label for="geojsonUpload"><strong>Nahrát GeoJSON</strong></label>
+          <label for="geojsonUpload"><strong>Upload GeoJSON</strong></label>
           <input type="file" id="geojsonUpload" accept=".geojson,.json" />
         </div>
       </section>
 
       <section class="control-section">
-        <h2>2. Klimatický normál & ukazatel</h2>
+        <h2>2. Climate Normal & Indicator</h2>
 
-        <label for="normalSelect">Referenční normál</label>
+        <label for="normalSelect">Reference Normal</label>
         <select id="normalSelect">
-          <option value="old">Starý normál</option>
-          <option value="new">Nový normál</option>
-          <option value="future">Predikce 2050</option>
+          <option value="old">Old Normal</option>
+          <option value="new">New Normal</option>
+          <option value="future">Prediction 2050</option>
         </select>
 
-        <label for="indicatorSelect">Klimatický ukazatel</label>
+        <label for="indicatorSelect">Climate Indicator</label>
         <select id="indicatorSelect">
           <option value="demartonne">De Martonne aridity index</option>
-          <option value="pet">Potenciální evapotranspirace (Thornthwaite)</option>
+          <option value="pet">Potential Evapotranspiration (Thornthwaite)</option>
         </select>
       </section>
 
       <section class="control-section">
-        <button id="computeBtn" class="primary-btn">Vypočítat</button>
+        <button id="computeBtn" class="primary-btn">Calculate</button>
         <p id="statusMessage" class="status"></p>
+        <div id="stopwatch">Calculation time: 0.00 s</div>
       </section>
 
       <section class="results-section">
-        <h2>Tabulka s normály</h2>
+        <h2>Normals Table</h2>
         <div class="table-wrapper">
           <table id="resultsTable">
             <thead>
               <tr>
-                <th>Normál</th>
+                <th>Normal</th>
                 <th>T [°C]</th>
                 <th>R [mm]</th>
                 <th>Index</th>
@@ -114,9 +115,9 @@
     <aside id="rightSidebar">
       <div id="topRightSection">
         <section class="results-section">
-          <h2>Výsledky</h2>
+          <h2>Results</h2>
           <div id="resultsSummary" class="summary-box">
-            <p>Zatím nebyl proveden žádný výpočet.</p>
+            <p>No calculation has been performed yet.</p>
           </div>
         </section>
       </div>
@@ -129,7 +130,7 @@
     </aside>
   </div>
 
-  <!-- Skripty -->
+  <!-- Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
   <script src="./js/api.js"></script>
   <script src="./js/compute.js"></script>
