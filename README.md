@@ -126,17 +126,29 @@ Since `pg-featureserv` is not included in the repository, you need to download i
 
 ```
 .
+├── .gitignore                  # Git ignore file
 ├── index.html                  # Main HTML file for the frontend
+├── info.txt                    # Information file
+├── opalena.geojson             # GeoJSON data file
+├── README.md                   # Project README file
+├── start.bat                   # Batch file to start the application
+├── stop.bat                    # Batch file to stop the application
 ├── backend/                    # Folder with the Node.js backend server
 │   ├── db.js                   # PostgreSQL database connection configuration
-│   ├── package-lock.json
+│   ├── package-lock.json       # Node.js package lock file
 │   ├── package.json            # Dependencies and scripts for the backend
 │   └── server.js               # Main backend server file (Express.js)
 ├── css/                        # Folder for CSS styles
 │   └── style.css               # Main application styles
-└── js/                         # Folder for frontend JavaScript modules
-    ├── api.js                  # Module for communication with the backend API
-    ├── charts.js               # Module for working with Chart.js graphs
-    ├── compute.js              # Module for calculation logic
-    ├── map.js                  # Module for map initialization and interaction (Leaflet)
-    └── ui.js                   # Module for managing the user interface and events
+├── js/                         # Folder for frontend JavaScript modules
+│   ├── api.js                  # Module for communication with the backend API
+│   ├── charts.js               # Module for working with Chart.js graphs
+│   ├── compute.js              # Module for calculation logic
+│   ├── map.js                  # Module for map initialization and interaction (Leaflet)
+│   └── ui.js                   # Module for managing the user interface and events
+└── pg-featureserv/             # PostgreSQL Feature Server directory
+    ├── assets/                 # Assets for pg-featureserv
+    ├── config/                 # Configuration files for pg-featureserv
+    ├── LICENSE.md              # License file for pg-featureserv
+    ├── pg_featureserv.exe      # Executable for pg-featureserv
+    └── README.md               # README for pg-featureserv
