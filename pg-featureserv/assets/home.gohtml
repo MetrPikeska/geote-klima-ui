@@ -1,0 +1,19 @@
+{{define "body"}}
+<div class='crumbs'>Home
+<a style='margin-left: 20px' class='json-link' href='{{ .context.URLJSON }}' title='JSON document for this page'>JSON</a>
+</div>
+<hr>
+<div style='font-style:italic;'>{{ .config.Metadata.Description }}</div>
+<div style='margin-top: 12px;'>
+<a href="api.html">OpenAPI schema</a><a style='margin-left: 5px' class='json-link' href='api.json' title='JSON document for OpenAPI schema'>JSON</a>
+<span style='font-size:18px; font-weigth:bold; margin: 0px 8px 0px 8px;'>|</span> <a href="conformance.html">Conformance</a><a style='margin-left: 5px' class='json-link' href='conformance.json' title='JSON document for the conformance'>JSON</a>
+</div>
+<h3>Collections</h3>
+<a href="collections.html">View the collections</a>
+<a class='json-link' href="collections.json">JSON</a>
+
+<h3>Functions</h3>
+<a href="functions.html">View the functions</a>
+<a class='json-link' href="functions.json">JSON</a>
+
+{{end}}

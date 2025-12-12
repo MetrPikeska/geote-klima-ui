@@ -1,0 +1,18 @@
+{{define "body"}}
+<div class='crumbs'><a href="{{ .context.URLHome }}">Home</a>
+/ Collections
+<a style='margin-left: 20px' class='json-link' href='{{ .context.URLJSON }}' title='JSON document for this page'>JSON</a>
+</div>
+<hr>
+<h3>Feature Collections</h3>
+
+{{ range .data.Collections }}
+<div >
+    <a href="{{ .URLMetadataHTML }}"><span class='coll-title'>{{ .Title }}</span></a>
+    <a class='json-link' href="{{ .URLMetadataJSON }}">JSON</a>
+    <a class='view-link' href="{{ .URLItemsHTML }}" title='View features on a map'>View</a>
+</div>
+<div class='coll-desc'>{{ .Description }}</div>
+<p>
+{{ end }}
+{{ end }}

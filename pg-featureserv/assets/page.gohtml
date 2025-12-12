@@ -1,0 +1,54 @@
+{{define "page"}}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ .config.Metadata.Title }}</title>
+<link rel="icon" type="image/png" href="https://www.crunchydata.com/favicon.png">
+
+{{template "mapStyle" .}}
+
+{{ range .links }}
+<link rel="{{ .Rel }}" type="application/json" href="{{ .Href }}"/>
+{{ end }}
+<style>
+body {	font-family: sans-serif; }
+a { color:blue; text-decoration: none;}
+a:hover, a:focus { text-decoration: underline; }
+hr { margin-left: -10px; margin-right: -10px; }
+h3 { margin-top: 0.5em; margin-bottom: 0.5em;}
+h4 { margin-top: 0.5em; margin-bottom: 0.5em;}
+
+.page-title { font-size: 16pt; color: white; padding: 6px; background-color: #0167B4;
+	margin: -10px -10px 0px -10px; padding: 10px 0px 10px 16px; }
+.tbl-props { border: 1px solid lightgrey; 	font-size: 12px; border-spacing: 3px; }
+.tbl-props tr:nth-child(even) { background-color: #EEE; }
+
+.coll-title { font-weight: bold; padding-right: 10px }
+.json-link { font-size: 12px; background-color: lightgray;  color: blue;
+	padding: 2px 8px 2px 8px; border-radius: 10px;
+}
+.view-link { font-size: 12px; background-color: white; color: blue;
+	padding: 1px 8px 1px 8px; border: 1px solid black; border-radius: 10px;
+}
+.coll-desc { font-style: italic; font-size: 11pt; margin-top: 4px; }
+.coll-title { font-weight: italic; text-align: end; vertical-align: top; padding-right: 10px;}
+.prop-name { font-family: monospace; }
+.crumbs { font-size: 10pt; margin: 6px; }
+.section-title { font-size: 10pt; font-weight: bold; text-align:right;}
+.param-title { margin-left: 10px; font-size: 10pt; text-align: right;}
+</style>
+</head>
+
+<body style='margin: 10px;'>
+	<header>
+		<div class='page-title'><a href="{{ .context.URLHome }}"><span style='color:white'>{{ .config.Metadata.Title }}</span></a>
+        <span style='font-size: 10px; font-style: italic; margin-left: 20px'>{{ .context.AppName }} - Version {{ .context.AppVersion }}</span></div>
+	</header>
+	{{template "body" .}}
+</body>
+</html>
+{{end}}
+
+{{define "mapStyle"}}
+{{end}}}

@@ -1,0 +1,319 @@
+{{define "mapStyle"}}
+<link rel="stylesheet" href="https://openlayers.org/en/v6.15.1/css/ol.css" type="text/css">
+
+<style>
+.map {
+    position: absolute;
+    top: 82px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+}
+.div-props {
+    xoverflow-y: auto;
+    height: 95%;
+}
+#tbl-props {
+	font-size: 12px;
+	border-spacing: 3px;
+    width: 100%;
+}
+#tbl-props tr:nth-child(even) {
+	background-color: #EEE;
+}
+.tbl-props-name {
+    width: 40%;
+    text-align: right;
+    font-weight: bold;
+}
+.arg-input {
+    width: 80px;
+}
+#feature-title {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+.btn-zoom {
+    height: 16px;
+    width: 16px;
+    border: 2px dashed blue;
+    background-color: white;
+    cursor: pointer;
+    outline: none;
+    margin-right: 4px;
+    padding: 0px;
+}
+.btn-zoom:hover { background-color: lightgray; }
+.map-widget {
+    padding: 4px;
+    background-color: #ffffffe0;
+    z-index: 1000;
+    border: 1px solid #0167B4;
+}
+.mw-title {
+    position: absolute;
+    top: 95px;
+    left: 50px;
+    border-radius: 8px;
+    padding: 5px 10px 5px 10px;
+    font-weight: bold;
+}
+.mw-query-params {
+    position: absolute;
+    top: 155px;
+    left: 0px;
+    border-radius: 0px 8px 8px 0px;
+    border-left: 0px;
+}
+.info-container {
+    position: absolute;
+    top: 85px;
+    right: 0px;
+    bottom: 100px;
+    background: transparent;
+    pointer-events: none;
+}
+.mw-info {
+    width: 300px;
+    max-height: 95%;
+    overflow-y: auto;
+    border-radius: 8px 0px 0px 8px;
+    border-right: 0px;
+    pointer-events: auto;
+}
+.mw-mousepos {
+    position: absolute;
+    right: 0px;
+    bottom: 0px;
+    height: 12px;
+    width: 140px;
+    padding: 4px;
+    border-right: 0px;
+    border-bottom: 0px;
+    background-color: white;
+    font-size: 12px;
+    text-align: right;
+}
+
+</style>
+{{ end }}
+{{define "propsTable"}}
+	<div id='feature-title' style='margin-top: 0;'>
+        <button id='zoom-feature' class='btn-zoom' title='Zoom to feature'></button>
+        Feature ID: <span id='feature-title-span'></span>
+        <span style='margin-left: 6px; font-size: 12px; font-weight: normal;'>( {{ .context.IDColumn }} )</span></div>
+    <div class='div-props'>
+	<table id='tbl-props' class='tbl-props' style='border: none; '>
+	<thead style='background-color: lightgrey;'>
+		<tr><th class='tbl-props-name'>Name</th><th>Value</th></tr>
+	</thead>
+	<tbody></tbody>
+	</table>
+    </div>
+{{end}}
+{{define "mapScript"}}
+<script src="https://openlayers.org/en/v6.15.1/build/ol.js"></script>
+<script>
+var SHOW_FEATURE_LINK = {{ .context.ShowFeatureLink }};
+var BASEMAP_URL = "{{ .config.Website.BasemapUrl }}";
+
+var vectorLayer = new ol.layer.Vector({
+	source: new ol.source.Vector({
+	  url: DATA_URL,
+	  format: new ol.format.GeoJSON()
+	}),
+	style: styleFunction
+  });
+var map = new ol.Map({
+	layers: [
+		new ol.layer.Tile({
+			source: new ol.source.OSM({
+				"url" : BASEMAP_URL
+			})
+		}),
+	],
+	target: 'map',
+	controls: ol.control.defaults({	attribution: false }),
+	view: new ol.View({
+		center: [0,0],
+		zoom: 10
+	})
+});
+map.addLayer(vectorLayer);
+
+map.once('rendercomplete', function(event) {
+	zoomLayer(vectorLayer);
+	onMapLoad();
+});
+map.on('pointermove', (evt) => {
+        let ptGeo = ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326');
+        let pFormat = ol.coordinate.toStringXY(ptGeo, 4);
+        let divPos = document.getElementById('map-mousepos');
+        divPos.innerHTML = pFormat + '  : ' + map.getView().getZoom().toFixed(0) ;
+    });
+function onFeatureClick(evt) {
+	var features = map.getFeaturesAtPixel(evt.pixel);
+	var loc = evt.coordinate;
+	if (features) {
+		showFeatureProperties( features[0] );
+	}
+}
+function zoomFeature(feature) {
+    if (! feature) return;
+	zoomExtent( feature.getGeometry().getExtent() );
+}
+function zoomLayer(lyr) {
+	zoomExtent( lyr.getSource().getExtent() );
+}
+function zoomExtent(extent) {
+	let sz = Math.max( ol.extent.getWidth(extent), ol.extent.getHeight(extent) );
+	let zoomext = ol.extent.buffer( extent,  0.2 * sz);
+    map.getView().fit(zoomext, map.getSize());
+}
+function extentGeo() {
+	var extent = map.getView().calculateExtent(map.getSize());
+	return ol.proj.transformExtent(extent, 'EPSG:3857', 'EPSG:4326');
+}
+function bboxStr(numDecimals) {
+	var fix = 4
+	if (numDecimals) fix = numDecimals;
+    var bbox = extentGeo()
+    var minx = bbox[0].toFixed(4)
+    var miny = bbox[1].toFixed(4)
+    var maxx = bbox[2].toFixed(4)
+    var maxy = bbox[3].toFixed(4)
+	var bboxStr = minx + "," + miny + "," + maxx + "," + maxy;
+	return bboxStr;
+}
+function showFeatureProperties(feature, showTitle) {
+    if (! feature) {
+        document.getElementById('mw-info').style.display = 'none';
+        return;
+    }
+
+	let titleText = document.getElementById('feature-title-span');
+	if (! showTitle) {
+
+	}
+	titleText.innerHTML = '';
+	let tbl = document.getElementById('tbl-props');
+	tableClear(tbl);
+
+    document.getElementById('mw-info').style.display = 'block';
+
+	let id = feature.getId();
+	let titleHTML = id;
+	if (SHOW_FEATURE_LINK && id) {
+		let link = 'items/' + id + '.html';
+		titleHTML = '<a href="' + link + '">' + id + '</a>';
+	}
+    document.getElementById('zoom-feature').onclick = function() {
+        zoomFeature(feature);
+    };
+	titleText.innerHTML = titleHTML;
+    //--- fill properties table
+	let prop = feature.getProperties();
+    let tblbody = tbl.getElementsByTagName('tbody')[0];
+    for (var key in prop) {
+        if (key == 'geometry') {
+			continue;
+		}
+		var row = tblbody.insertRow(-1);
+		var cell0 = row.insertCell();
+		cell0.innerText = key;
+        cell0.className = 'tbl-props-name';
+		var cell1 = row.insertCell();
+		cell1.innerText = prop[key];
+    }
+}
+function tableClear(tbl) {
+	var rowCount = tbl.rows.length;
+	while(rowCount > 0 && --rowCount) tbl.deleteRow(rowCount);
+}
+//===========================
+function SIMPLEstyleFunction(feature) {
+	return styles[feature.getGeometry().getType()];
+}
+function styleFunction(feature) {
+    let ftype = feature.getGeometry().getType();
+    let sty = styles[ftype];
+
+    let styleLabelText = feature.get('style_label_text');
+    if (styleLabelText) {
+        let textSpec = {
+            text: styleLabelText,
+            font: '14px sans-serif',
+            fill: new ol.style.Fill({ color: '#000000' }),
+        };
+        // label offset for points
+        if (ftype == 'Point') {
+            textSpec.offsetY = -14;	}
+        sty.setText( new ol.style.Text(textSpec) );
+    }
+    if (sty.getFill()) {
+        let fillClr = styleVal( feature.get('style_fill_color'), sty.getFill().getColor() );
+        if (fillClr) {
+            sty.setFill(new ol.style.Fill({ color: fillClr } ));
+        }
+    }
+    if (sty.getStroke()) {
+        let strokeClr = styleVal( feature.get('style_stroke_color'), sty.getStroke().getColor() );
+        let strokeW = styleVal( feature.get('style_stroke_width'), sty.getStroke().getWidth() );
+
+        // OL bug?  looks like need width to be > 0
+        if (! strokeW || strokeW <= 0) strokeW = 0.00001;
+
+        if (strokeClr || strokeW >= 0) {
+            sty.setStroke(new ol.style.Stroke( { color: strokeClr, width: strokeW } ));
+        }
+    }
+    if (sty.getImage()) {
+        let fillClr = styleVal(feature.get('style_fill_color'), 'red');
+        let radiusVal = styleVal(feature.get('style_radius'), 5);
+        let image = new ol.style.Circle({ radius: radiusVal,
+        	fill: new ol.style.Fill({ color: fillClr})
+        });
+        sty.setImage(image);
+    }
+    return sty;
+}
+function styleVal(val, defaultVal) {
+    if (val) return val;
+    return defaultVal;
+}
+var image = new ol.style.Circle({ radius: 5,
+	fill: new ol.style.Fill({ color: 'red' }),
+	stroke: new ol.style.Stroke({color: 'red', width: 1})
+});
+var styles = {
+	'Point': new ol.style.Style({ image: image }),
+	'MultiPoint': new ol.style.Style({ image: image }),
+	'LineString': new ol.style.Style({
+		stroke: new ol.style.Stroke({ color: 'red', width: 2 })
+	}),
+	'MultiLineString': new ol.style.Style({
+		stroke: new ol.style.Stroke({ color: 'red', width: 2 })
+	}),
+	'MultiPolygon': new ol.style.Style({
+		stroke: new ol.style.Stroke({ color: 'blue', width: 2 }),
+		fill: new ol.style.Fill({ color: 'rgba(0, 0, 255, 0.1)'	})
+	}),
+	'Polygon': new ol.style.Style({
+		stroke: new ol.style.Stroke({ color: 'blue', lineDash: [4], width: 2 }),
+		fill: new ol.style.Fill({ color: 'rgba(0, 0, 255, 0.1)'	})
+	}),
+	'GeometryCollection': new ol.style.Style({
+		stroke: new ol.style.Stroke({ color: 'magenta',	width: 2 }),
+		fill: new ol.style.Fill({ color: 'magenta' }),
+		image: new ol.style.Circle({ radius: 10, fill: null,
+			stroke: new ol.style.Stroke({ color: 'magenta' })
+		})
+	}),
+	'Circle': new ol.style.Style({
+		stroke: new ol.style.Stroke({ color: 'red',	width: 2 }),
+		fill: new ol.style.Fill({ color: 'rgba(255,0,0,0.2)' })
+	})
+};
+
+</script>
+{{ end }}

@@ -1,0 +1,110 @@
+{{define "body"}}
+<div class='crumbs'><a href="{{ .context.URLHome }}">Home</a>
+/ <a href="{{ .context.URLCollections }}">{{ .context.Group }}</a>
+/ <a href="{{ .context.URLCollection }}">{{ .context.Title }}</a>
+/ Items
+<a style='margin-left: 20px' class='json-link' href='{{ .context.URLJSON }}' title='JSON document for this page'>JSON</a>
+</div>
+
+<div class='mw-query-params map-widget'>
+<table>
+<tr>
+<td></td>
+<td style='text-align: right;'>
+<button onclick='doQuery();' title='Click to requery with the parameters'>Requery</button></td>
+</tr>
+<tr>
+<td class='section-title' colspan='2' style='text-align: left'>Parameters</td>
+</tr>
+<tr>
+<td class='param-title' title='Limits the number of features in the response'>Limit</span></td>
+<td>
+<select id='item-limit'>
+<option></option>
+<option>10</option>
+<option>50</option>
+<option>100</option>
+<option>500</option>
+<option>1000</option>
+<option>5000</option>
+<option>10000</option>
+</select>
+</td>
+</tr>
+<tr>
+<td style='text-align: right'><span class='param-title' title='Sets the BBOX query parameter to the map extent'>BBox</span></td>
+<td>
+<input type='checkbox' id='chk-bbox'>
+</td>
+</tr>
+{{template "funArgs" .}}
+</table>
+</div>
+
+<div class='mw-title map-widget'>
+    <table>
+    <tr>
+    <td style="vertical-align:top"><button id='zoom-layer' class='btn-zoom' title='Zoom to features'></button></td>
+    <td>
+        <div>{{ .context.Title }}</div>
+        <div style='font-size: 10px; font-weight: normal; font-style: italic; margin-top: 2px;'>Feature count: <span id='feature-count'>-</span></div>
+
+        </td>
+    </tr>
+    </table>
+</div>
+
+<div id="map" class="map"></div>
+<div id='map-mousepos' class='mw-mousepos map-widget'></div>
+<div class='info-container'>
+    <div class='mw-info map-widget' id='mw-info' style='display: none;'>
+{{template "propsTable" .}}
+    </div>
+</div>
+
+<script>
+var DATA_URL = "{{ .context.URLJSON }}";
+ITEMS_PAGE = true;
+</script>
+{{template "mapScript" .}}
+<script>
+document.getElementById('zoom-layer').onclick = function() {
+        zoomLayer(vectorLayer);
+};
+function onMapLoad() {
+	map.on('click', function(evt) {  onFeatureClick(evt); } );
+
+    let numFeat = vectorLayer.getSource().getFeatures().length;
+    document.getElementById('feature-count').innerHTML = numFeat;
+
+}
+function doQuery() {
+	var url = window.location.pathname;
+	var newUrl = addFunctionArgs(url);
+
+	var select = document.getElementById('item-limit');
+	var lim = select.options[select.selectedIndex].value;
+	newurl = addQueryParam(newUrl, 'limit', lim);
+
+	var useBbox = document.getElementById('chk-bbox').checked;
+	if (useBbox) {
+		var bbox = bboxStr(5);
+		newurl = addQueryParam(newurl, 'bbox', bbox);
+	}
+	window.location.assign(newurl);
+}
+function addQueryParam(url, name, value) {
+	if (! value || value.length <= 0) return url;
+	let hasQuery = url.indexOf('?') >= 0;
+	let  delim = hasQuery ? '&' : '?';
+	let  newUrl = `${url}${delim}${name}=${value}`;
+	return newUrl;
+}
+</script>
+{{ end }}
+{{define "funArgs"}}
+<script>
+// No-op for function args - replaced on function Items page
+function addFunctionArgs(url) { return url; }
+</script>
+{{ end }}
