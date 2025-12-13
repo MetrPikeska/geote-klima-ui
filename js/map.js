@@ -64,6 +64,33 @@ ClimateApp.map = (function () {
     return geojson;
   }
 
+  // === Generates HTML content for a Leaflet popup ===
+  function getPopupContent(properties) { // ADDED: Function to generate popup content
+    let content = "<h4>Polygon Info</h4>";
+    if (properties) {
+      for (const key in properties) {
+        if (Object.hasOwnProperty.call(properties, key)) {
+          const value = properties[key];
+          // Basic check for non-object values to display
+          if (typeof value !== 'object' && typeof value !== 'function') {
+            content += `<p><strong>${key}:</strong> ${value}</p>`;
+          }
+        }
+      }
+    } else {
+      content += "<p>No properties available.</p>";
+    }
+
+    // ADDED: Approximate area calculation for custom polygons if no area property is found
+    if (!properties || !properties.area) {
+      // This is a placeholder. Accurate area calculation for arbitrary polygons requires a library like turf.js
+      // For demonstration, we can add a note or a very basic approximation if needed.
+      content += "<p>Area calculation not available or approximate.</p>";
+    }
+
+    return content;
+  }
+
   // === Map Initialization ===
   function initMap() {
     map = L.map("map", {
@@ -76,7 +103,7 @@ ClimateApp.map = (function () {
       maxZoom: 19
     }).addTo(map);
 
-    L.control.scale().addTo(map); // ADDED: Scale control
+    L.control.scale().addTo(map); // Scale control
 
     drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
@@ -113,6 +140,7 @@ ClimateApp.map = (function () {
       drawnItems.addLayer(layer);
 
       ClimateApp.state.customPolygon = layer.toGeoJSON();
+      // No popup binding
     });
 
     // Enable upload
@@ -132,6 +160,9 @@ ClimateApp.map = (function () {
         color: "#a855f7",
         weight: 2,
         fillOpacity: 0.15
+      },
+      onEachFeature: function(feature, layer) { 
+        // No popup binding
       }
     }).addTo(map);
 
@@ -163,7 +194,7 @@ ClimateApp.map = (function () {
             console.log("Converted FeatureCollection → Feature");
           }
 
-          // 🟦 Convert S-JTSK → WGS84 only if it's not WGS
+          // 🟦 Convert S-JTSK → WGS84 only if it`s not WGS
           geojson = convertToWGS84IfNeeded(geojson);
 
           // 🟦 Render
@@ -174,6 +205,9 @@ ClimateApp.map = (function () {
               color: "#38bdf8",
               weight: 2,
               fillOpacity: 0.2
+            },
+            onEachFeature: function(feature, layer) {
+              // No popup binding
             }
           }).addTo(drawnItems);
 
@@ -181,6 +215,7 @@ ClimateApp.map = (function () {
           ClimateApp.state.customPolygon = geojson;
 
           map.fitBounds(layer.getBounds());
+          // No openPopup()
 
         } catch (err) {
           alert("File is not a valid GeoJSON.");

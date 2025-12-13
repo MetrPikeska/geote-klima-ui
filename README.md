@@ -5,7 +5,9 @@
 
 ## Project Overview
 
-**GEOTE Climate UI** is a web application designed as a semester project for analyzing and visualizing climate indicators. It allows users to study climate data for pre-defined administrative units (ORP - Municipalities with Extended Powers, CHKO - Protected Landscape Areas) or custom-drawn geographic polygons within the Czech Republic. The application leverages PostGIS for robust spatial analysis and provides insights into historical and projected climate normals.
+This project was developed as part of a semester project for the GEOTE course at the Department of Geoinformatics, during the Winter Semester 2025. The climate data utilized in this application was provided by the university.
+
+**GEOTE Climate UI** is a web application designed for analyzing and visualizing climate indicators. It allows users to study climate data for pre-defined administrative units (ORP - Municipalities with Extended Powers, CHKO - Protected Landscape Areas) or custom-drawn geographic polygons within the Czech Republic. The application leverages PostGIS for robust spatial analysis and provides insights into historical and projected climate normals.
 
 ## Key Features
 
@@ -38,6 +40,32 @@
 -   [PostgreSQL](https://www.postgresql.org/) with [PostGIS](https://postgis.net/) extension for advanced spatial data management and queries.
 -   [pg-featureserv](https://github.com/CrunchyData/pg_featureserv) as an OGC API Features server for serving spatial data collections.
 
+## Database Architecture
+
+The project's data infrastructure is built upon a robust PostgreSQL database, heavily leveraging the PostGIS extension for advanced geospatial capabilities. The architecture is designed to efficiently store, process, and serve complex climate and cadastral data.
+
+## Data Import Workflow
+
+Raw climate data, typically in CSV format, is initially imported into dedicated intermediate tables within PostgreSQL. This process is managed by a custom Python script (e.g., `import.py`), which handles the initial ingestion of raw data.
+
+## Master Table Creation (SQL-based)
+
+The core of the project's spatial data is the `climate_master_geom` table. This central master table is created using SQL JOIN operations, integrating the imported intermediate climate data with a cadastral layer (`ku_cr`). The `climate_master_geom` table stores:
+-   **Geometry:** MultiPolygon spatial data, specifically in EPSG:5514 (S-JTSK / Krovak East North) coordinate reference system.
+-   **Climate Variables:** Monthly and annual climate variables.
+-   **Computed Indices:** Pre-calculated climate indicators such as the De Martonne aridity index and Potential Evapotranspiration (Thornthwaite).
+
+## Derived Spatial Layers (ORP, CHKO)
+
+Aggregated spatial layers for administrative units like ORP (Municipalities with Extended Powers) and CHKO (Protected Landscape Areas) are derived from the `climate_master_geom` master table. This derivation is performed using SQL spatial aggregation techniques, enabling efficient querying and visualization of climate indicators at these higher administrative levels.
+
+## Database Requirements
+
+-   **PostgreSQL:** Version 12+ is required.
+-   **PostGIS Extension:** The PostGIS extension is **MANDATORY** and must be installed and enabled in the project's database. This provides the necessary spatial functions and data types for the application's core functionality.
+-   **Database Name:** A PostgreSQL database named `klima` must exist. If a different name is used, corresponding updates are required in `backend/db.js` and `pg-featureserv/config/pg_featureserv.toml`.
+-   **Database User:** Ensure a PostgreSQL user (e.g., `postgres` with password `master`) has appropriate access privileges to the `klima` database. It is strongly recommended to use environment variables for sensitive credentials (e.g., `process.env.DB_PASSWORD`).
+
 ## Getting Started
 
 Follow these steps to set up and run the project on your local machine.
@@ -47,23 +75,8 @@ Follow these steps to set up and run the project on your local machine.
 Ensure you have the following software installed on your system:
 
 -   **Node.js** (LTS version recommended) with `npm` (Node Package Manager).
--   **PostgreSQL** (version 12+) with the **PostGIS** extension installed and enabled in your database.
 
-### 1. Database Setup
-
-1.  **Create Database:** Create a PostgreSQL database named `klima`. If you wish to use a different name, you'll need to update the configuration files accordingly.
-    ```sql
-    CREATE DATABASE klima;
-    ```
-2.  **Enable PostGIS:** Connect to your `klima` database and enable the PostGIS extension.
-    ```sql
-    -- Connect to klima database
-    \c klima
-    CREATE EXTENSION postgis;
-    ```
-3.  **Database User:** Ensure you have a PostgreSQL user (e.g., `postgres` with password `master`) that has access to the `klima` database. Update credentials in `backend/db.js` and `pg-featureserv/config/pg_featureserv.toml` if yours differ.
-
-### 2. Backend Server Setup
+### 1. Backend Server Setup
 
 1.  Navigate to the `backend` directory:
     ```bash
@@ -86,14 +99,14 @@ Ensure you have the following software installed on your system:
     ```
     It's highly recommended to use environment variables for sensitive information like database passwords (e.g., `process.env.DB_PASSWORD`).
 
-### 3. PostgreSQL Feature Server (`pg-featureserv`) Setup
+### 2. PostgreSQL Feature Server (`pg-featureserv`) Setup
 
 `pg-featureserv` is distributed as a standalone executable. It is included in this repository for convenience.
 
 1.  **Configuration:** The configuration file is located at `pg-featureserv/config/pg_featureserv.toml`. It's pre-configured for `HttpPort = 9000` and `DbConnection = "postgresql://postgres:master@localhost:5432/klima"`.
     *   **Important:** If your PostgreSQL credentials or database name differ, you **must** update the `DbConnection` string in `pg-featureserv/config/pg_featureserv.toml`.
 
-### 4. Running the Application
+### 3. Running the Application
 
 #### On Windows (Recommended for quick start)
 
