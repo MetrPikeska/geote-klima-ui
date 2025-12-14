@@ -201,3 +201,51 @@ This project is licensed under the MIT License - see the [LICENSE.md](#) file fo
 ## Contributing
 
 Contributions are welcome! Please feel free to open issues or submit pull requests. For major changes, please open an issue first to discuss what you would like to change.
+
+# Dokumentace zdrojových dat (Source Data Documentation)
+
+Tento dokument popisuje strukturu, původ, význam a způsob využití zdrojových dat ve formátu CSV, která slouží jako vstup pro projekt GEOTE Klima. Data jsou následně importována do databáze PostgreSQL/PostGIS a využita pro výpočty klimatických ukazatelů a vizualizaci ve webové aplikaci.
+
+## Zdrojová data (Source data)
+
+### 1. Přehled dat
+
+Projekt GEOTE Klima pracuje s daty ve formátu CSV, která představují klíčové klimatické proměnné v měsíčním časovém kroku. Tato data jsou základním vstupem pro výpočty různých klimatických ukazatelů a analýzy. Jsou prostorově navázána na územní jednotky České republiky, což umožňuje detailní geografickou analýzu.
+
+### 2. Regionální data (data/regiony/)
+
+Tato část repozitáře obsahuje referenční územní jednotky České republiky, které slouží pro prostorové napojení klimatických hodnot, agregaci výsledků a analýzu na různých územních úrovních:
+
+*   **ku** – Katastrální území: Základní územní jednotka, na kterou jsou primárně navázány klimatické hodnoty.
+*   **orp** – Obce s rozšířenou působností: Vyšší územní celek pro agregaci a analýzu dat.
+*   **chko** – Chráněné krajinné oblasti: Specifické územní jednotky pro environmentální analýzy.
+
+### 3. Klimatické proměnné
+
+Následující složky obsahují CSV soubory s klimatickými daty pro konkrétní proměnné:
+
+*   **TAVG**: Průměrná měsíční teplota vzduchu (°C).
+*   **SRA**: Měsíční úhrn atmosférických srážek (mm).
+*   **RH**: Průměrná měsíční relativní vlhkost vzduchu (%).
+*   **WV**: Průměrná měsíční rychlost větru (m·s⁻¹).
+
+Data jsou strukturována po měsících, přičemž jeden řádek v CSV souboru odpovídá jedné prostorové jednotce (katastrální území) a roku. Měsíční hodnoty jsou následně agregovány na roční úroveň pro další analýzy.
+
+### 4. Vazba na databázi
+
+Import CSV souborů do databáze PostgreSQL/PostGIS probíhá pomocí Python skriptů. Tyto skripty zajišťují transformaci a kontrolu dat, včetně jejich napojení na prostorovou geometrii územních jednotek. Výsledkem je uložení dat do centrální tabulky `climate_master_geom`, která obsahuje jak atributová data, tak i prostorové informace.
+
+Je důležité zdůraznit, že samotné CSV soubory neobsahují geometrii, ale pouze atributová data. Prostorové napojení probíhá až během importu do databáze, kde jsou data propojena s existujícími geometrickými vrstvami.
+
+### 5. Využití dat
+
+Importovaná a zpracovaná data slouží k celé řadě analýz a výpočtů v rámci projektu, včetně:
+
+*   Výpočtu ariditního indexu de Martonne.
+*   Výpočtu potenciální evapotranspirace (metoda Thornthwaite).
+*   Analýze klimatických změn mezi různými normály.
+*   Prezentaci výsledků a vizualizaci v interaktivní webové aplikaci.
+
+### 6. Poznámka k repozitáři
+
+Data obsažená v tomto repozitáři jsou určena primárně pro studijní a výzkumné účely v rámci semestrální práce. Nejsou určena k operativnímu meteorologickému využití. Struktura dat a adresářů je navržena tak, aby umožňovala snadné rozšíření o další klimatické proměnné nebo časové řady (roky) v budoucnu.
