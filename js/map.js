@@ -54,7 +54,7 @@ ClimateApp.map = (function () {
     }
 
     if (geom.type === "MultiPolygon") {
-      if (!looksLikeWGS84(geom.coordinates[0])) {
+      if (!looksLikeWGS4(geom.coordinates[0])) {
         geojson.geometry.coordinates = geom.coordinates.map(poly =>
           convertPolygon(poly)
         );
@@ -184,7 +184,7 @@ ClimateApp.map = (function () {
         try {
           let geojson = JSON.parse(event.target.result);
 
-          // 🟦 FeatureCollection → take the first feature
+          // FeatureCollection → take the first feature
           if (geojson.type === "FeatureCollection") {
             if (!geojson.features || geojson.features.length === 0) {
               alert("FeatureCollection contains no features.");
@@ -194,10 +194,10 @@ ClimateApp.map = (function () {
             console.log("Converted FeatureCollection → Feature");
           }
 
-          // 🟦 Convert S-JTSK → WGS84 only if it`s not WGS
+          // Convert S-JTSK → WGS84 only if it`s not WGS
           geojson = convertToWGS84IfNeeded(geojson);
 
-          // 🟦 Render
+          // Render
           drawnItems.clearLayers();
 
           const layer = L.geoJSON(geojson, {
@@ -211,7 +211,7 @@ ClimateApp.map = (function () {
             }
           }).addTo(drawnItems);
 
-          // 🟦 Save to app state
+          // Save to app state
           ClimateApp.state.customPolygon = geojson;
 
           map.fitBounds(layer.getBounds());
