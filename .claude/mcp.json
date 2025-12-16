@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "postgres-klima": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://postgres:master@localhost:5432/klima"
+      ],
+      "description": "PostgreSQL MCP server for klima database (PostGIS enabled)"
+    }
+  }
+}
