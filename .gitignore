@@ -5,3 +5,7 @@ node_modules/
 .DS_Store
 Thumbs.db
 data.zip
+
+# Claude Code configuration (may contain credentials)
+.claude/mcp.json
+.claude/settings*.json
