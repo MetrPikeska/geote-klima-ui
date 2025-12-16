@@ -84,6 +84,7 @@ ClimateApp.compute = (function () {
         index: idx,
         de_martonne: n.de_martonne,
         pet: n.pet,
+        monthlyTemps: n.monthlyTemps, // Pass monthly temps to charts
       };
     });
   }
