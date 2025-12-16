@@ -3,6 +3,24 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/MetrPikeska/geote-klima-ui)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
+## ⚠️ Current Updates
+
+**MCP Server Status (December 2024):**
+The Model Context Protocol (MCP) server for PostgreSQL database access is currently **not functional** due to the following issues:
+- The `@modelcontextprotocol/server-postgres` package (v0.6.2) is **deprecated** and no longer maintained
+- Package contains bugs causing `TypeError: Invalid URL` during initialization
+- NPM recommends contacting support, indicating the package is abandoned
+
+**Alternative Solutions:**
+- Direct database queries via Node.js scripts work reliably
+- Backend API (`/climate/polygon` endpoint) remains fully functional
+- For database exploration, use helper scripts in `backend/` directory or standard PostgreSQL tools
+
+**Future Plans:**
+We are monitoring the MCP ecosystem for updates. A working configuration is preserved in the `feature/mcp-server` branch for future use when the package is fixed or replaced.
+
+---
+
 ## Project Overview
 
 This project was developed as part of a semester project for the GEOTE course at the Department of Geoinformatics, during the Winter Semester 2025. The climate data utilized in this application was provided by the university.
