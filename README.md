@@ -63,8 +63,8 @@ Aggregated spatial layers for administrative units like ORP (Municipalities with
 
 -   **PostgreSQL:** Version 12+ is required.
 -   **PostGIS Extension:** The PostGIS extension is **MANDATORY** and must be installed and enabled in the project's database. This provides the necessary spatial functions and data types for the application's core functionality.
--   **Database Name:** A PostgreSQL database named `klima` must exist. If a different name is used, corresponding updates are required in `backend/db.js` and `pg-featureserv/config/pg_featureserv.toml`.
--   **Database User:** Ensure a PostgreSQL user (e.g., `postgres` with password `master`) has appropriate access privileges to the `klima` database. It is strongly recommended to use environment variables for sensitive credentials (e.g., `process.env.DB_PASSWORD`).
+-   **Database Name:** A PostgreSQL database named `klima` must exist. If a different name is used, update the `DB_NAME` in `backend/.env` and `pg-featureserv/config/pg_featureserv.toml`.
+-   **Database User:** Ensure a PostgreSQL user has appropriate access privileges to the `klima` database. Configure credentials in `backend/.env` file (see [SECURITY_IMPROVEMENTS.md](SECURITY_IMPROVEMENTS.md) for details).
 
 ## Getting Started
 
@@ -86,18 +86,27 @@ Ensure you have the following software installed on your system:
     ```bash
     npm install
     ```
-3.  Verify database connection settings in `backend/db.js`:
-    ```javascript
-    // backend/db.js
-    const pool = new Pool({
-      host: "localhost",
-      user: "postgres",
-      password: process.env.DB_PASSWORD || "master", // Consider using environment variables for sensitive info
-      database: "klima",
-      port: 5432
-    });
+3.  **Configure environment variables** (MANDATORY):
+    ```bash
+    # Copy the example environment file
+    cp .env.example .env
+
+    # Edit .env and set your PostgreSQL password
+    # The file already contains sensible defaults
     ```
-    It's highly recommended to use environment variables for sensitive information like database passwords (e.g., `process.env.DB_PASSWORD`).
+    The `.env` file contains database credentials and is excluded from git for security.
+    **Never commit `.env` to version control!**
+
+    Example `.env` contents:
+    ```env
+    DB_HOST=localhost
+    DB_PORT=5432
+    DB_USER=postgres
+    DB_PASSWORD=your_password_here  # ← Change this!
+    DB_NAME=klima
+    PORT=4000
+    NODE_ENV=development
+    ```
 
 ### 2. PostgreSQL Feature Server (`pg-featureserv`) Setup
 
@@ -193,6 +202,19 @@ The `.gitignore` file is configured to exclude development-specific files and se
     ├── pg_featureserv.exe      # Executable application for the feature server
     └── README.md               # Documentation for pg_featureserv
 ```
+
+## 🔒 Security
+
+This project implements secure credential management and error handling. See [SECURITY_IMPROVEMENTS.md](SECURITY_IMPROVEMENTS.md) for detailed documentation.
+
+**Key security features:**
+- ✅ Environment variables for database credentials (`.env` file)
+- ✅ Input validation for geometry data
+- ✅ Comprehensive error handling (backend + frontend)
+- ✅ Database connection monitoring
+- ✅ User-friendly error messages
+
+**Important:** Never commit the `backend/.env` file to version control. Use `backend/.env.example` as a template.
 
 ## License
 

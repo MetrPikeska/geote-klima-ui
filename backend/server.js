@@ -23,13 +23,31 @@ app.post("/climate/polygon", async (req, res) => {
   try {
     const { geometry, label } = req.body;
 
+    // Validation: Check if geometry exists
     if (!geometry) {
-      return res.status(400).json({ error: "Missing geometry" });
+      return res.status(400).json({
+        error: "Missing geometry",
+        message: "Request must include a 'geometry' field with valid GeoJSON"
+      });
     }
 
-    // Pokud přijde Feature → extrahuj geometry
-    const geomOnly =
-      geometry.type === "Feature" ? geometry.geometry : geometry;
+    // Validation: Check geometry structure
+    const geomOnly = geometry.type === "Feature" ? geometry.geometry : geometry;
+
+    if (!geomOnly.type || !geomOnly.coordinates) {
+      return res.status(400).json({
+        error: "Invalid geometry format",
+        message: "Geometry must have 'type' and 'coordinates' properties"
+      });
+    }
+
+    // Validation: Check if coordinates array is not empty
+    if (!Array.isArray(geomOnly.coordinates) || geomOnly.coordinates.length === 0) {
+      return res.status(400).json({
+        error: "Invalid coordinates",
+        message: "Geometry coordinates must be a non-empty array"
+      });
+    }
 
     const jsonGeom = JSON.stringify(geomOnly);
 
@@ -80,8 +98,17 @@ app.post("/climate/polygon", async (req, res) => {
       ORDER BY year;
     `;
 
-    // Výsledek
-    const rows = (await pool.query(sql, [jsonGeom])).rows;
+    // Execute query
+    const result = await pool.query(sql, [jsonGeom]);
+    const rows = result.rows;
+
+    // Validation: Check if we got any data
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({
+        error: "No climate data found",
+        message: "The provided polygon does not intersect with any climate data. Try a larger area or different location."
+      });
+    }
 
     // ============================================================
     //  HELPER FUNKCE
@@ -137,7 +164,31 @@ app.post("/climate/polygon", async (req, res) => {
 
   } catch (err) {
     console.error("BACKEND ERROR:", err);
-    res.status(500).json({ error: err.message });
+
+    // Different error types
+    if (err.code === '22P02') {
+      // PostGIS geometry parsing error
+      return res.status(400).json({
+        error: "Invalid GeoJSON",
+        message: "The provided geometry could not be parsed. Please check your GeoJSON format.",
+        details: err.message
+      });
+    }
+
+    if (err.code === 'ECONNREFUSED') {
+      // Database connection error
+      return res.status(503).json({
+        error: "Database unavailable",
+        message: "Cannot connect to the database. Please check if PostgreSQL is running."
+      });
+    }
+
+    // Generic server error
+    res.status(500).json({
+      error: "Internal server error",
+      message: "An unexpected error occurred while processing your request.",
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 

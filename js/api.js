@@ -67,19 +67,57 @@ ClimateApp.api = (function () {
           label: selection.label
         })
       });
+
       const endTime = performance.now();
-      const duration = (endTime - startTime).toFixed(2); // in milliseconds
-      onComplete(duration); // Call onComplete with duration
+      const duration = (endTime - startTime).toFixed(2);
+      onComplete(duration);
+
+      // Check if response is OK
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({
+          error: 'Unknown error',
+          message: `HTTP ${res.status}: ${res.statusText}`
+        }));
+
+        throw {
+          status: res.status,
+          error: errorData.error || 'Request failed',
+          message: errorData.message || res.statusText,
+          details: errorData.details,
+          duration: duration
+        };
+      }
 
       const data = await res.json();
       return { ...data, duration: duration };
 
     } catch (err) {
       const endTime = performance.now();
-      const duration = (endTime - startTime).toFixed(2); // in milliseconds
-      onComplete(duration); // Call onComplete with duration even on error
+      const duration = (endTime - startTime).toFixed(2);
+      onComplete(duration);
+
       console.error("Backend error during climate data calculation:", err);
-      throw { error: err, duration: duration }; // Also pass duration on error
+
+      // Network error (fetch failed completely)
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        alert(`❌ Chyba spojení se serverem!\n\nNelze se připojit k backendu na ${ClimateApp.config.BACKEND_URL}\n\nZkontrolujte, zda backend běží (start.bat).`);
+        throw {
+          error: 'Network error',
+          message: 'Cannot connect to backend server',
+          duration: duration
+        };
+      }
+
+      // Backend returned an error response
+      if (err.status) {
+        const errorMsg = err.message || err.error || 'Neznámá chyba';
+        alert(`❌ Chyba při výpočtu klimatických dat!\n\n${errorMsg}\n\n${err.details || ''}`);
+        throw err;
+      }
+
+      // Unknown error
+      alert(`❌ Neočekávaná chyba!\n\n${err.message || err}`);
+      throw { error: err, duration: duration };
     }
   }
 
