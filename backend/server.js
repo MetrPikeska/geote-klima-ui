@@ -163,7 +163,12 @@ app.post("/climate/polygon", async (req, res) => {
     });
 
   } catch (err) {
+    console.error("=".repeat(60));
     console.error("BACKEND ERROR:", err);
+    console.error("Error code:", err.code);
+    console.error("Error message:", err.message);
+    console.error("Error stack:", err.stack);
+    console.error("=".repeat(60));
 
     // Different error types
     if (err.code === '22P02') {
