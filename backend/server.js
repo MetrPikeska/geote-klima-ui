@@ -282,10 +282,12 @@ app.post("/climate/polygon", async (req, res) => {
       });
     }
 
+    console.error('❌ Server error:', err);
     res.status(500).json({
       error: "Internal server error",
       message: "An unexpected error occurred.",
-      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+      details: err.message,
+      stack: err.stack
     });
   }
 });
