@@ -416,6 +416,12 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderBatchComparisonChart(canvas, results, indicatorKey) {
     if (!canvas) return null;
 
+    // Destroy existing chart if it exists
+    if (currentChart) {
+      currentChart.destroy();
+      currentChart = null;
+    }
+
     const labels = [];
     const dataNew = [];
     const dataFuture = [];

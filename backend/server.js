@@ -184,36 +184,53 @@ async function computeClimateForGeometry(geomOnly, label) {
         WHERE ST_Intersects(c.geom, p.geom)
       ),
       weights AS (
-        SELECT *,
+        SELECT 
+          *,
           area_intersect / NULLIF(area_poly, 0) AS weight
         FROM inter
         WHERE area_intersect > 0
       )
       SELECT
         year,
-        SUM(weight * tavg_avg) AS T_year,
-        SUM(weight * (
-          sra_m1 + sra_m2 + sra_m3 + sra_m4 + sra_m5 + sra_m6 +
-          sra_m7 + sra_m8 + sra_m9 + sra_m10 + sra_m11 + sra_m12
-        )) AS R_year,
+        tavg_avg,
+        (sra_m1 + sra_m2 + sra_m3 + sra_m4 + sra_m5 + sra_m6 +
+         sra_m7 + sra_m8 + sra_m9 + sra_m10 + sra_m11 + sra_m12) AS sra_annual,
+        weight,
         ${Array.from({ length: 12 }, (_, i) =>
-          `SUM(weight * tavg_m${i + 1}) AS tavg_m${i + 1}`
+          `tavg_m${i + 1}`
         ).join(",")}
       FROM weights
-      GROUP BY year
       ORDER BY year;
     `;
+
+    // Log the query
+    console.log('[SQL DEBUG] Query params - SRID detection:', incomingIs5514 ? '5514' : '4326->5514');
+
+    // First, test if geometry is valid and intersecting
+    const testIntersect = await pool.query(`
+      WITH poly AS (
+        SELECT ${geomExpr} AS geom
+      )
+      SELECT 
+        COUNT(*) as total_climate_cells,
+        (SELECT COUNT(*) FROM climate_master_geom c 
+         CROSS JOIN poly p 
+         WHERE ST_Intersects(c.geom, p.geom)) as intersecting_cells
+      FROM climate_master_geom
+    `, [jsonGeom]);
+    
+    console.log('[SQL DEBUG] Intersection test:', testIntersect.rows[0]);
 
     const result = await pool.query(sql, [jsonGeom]);
     const rows = result.rows;
 
-    console.log('[SQL DEBUG] Query executed. Rows returned:', rows.length);
+    console.log('[SQL DEBUG] Query executed. Raw rows returned:', rows.length);
     if (rows.length > 0) {
-      console.log('[SQL DEBUG] First row years:', rows.map(r => r.year).slice(0, 5));
-      console.log('[SQL DEBUG] Sample row:', {
+      console.log('[SQL DEBUG] Sample row (raw):', {
         year: rows[0].year,
-        T_year: rows[0].T_year,
-        R_year: rows[0].R_year,
+        weight: rows[0].weight,
+        tavg_avg: rows[0].tavg_avg,
+        sra_annual: rows[0].sra_annual,
         tavg_m1: rows[0].tavg_m1
       });
     }
@@ -222,17 +239,59 @@ async function computeClimateForGeometry(geomOnly, label) {
       return null;
     }
 
-    const avg = (arr, col) =>
-      arr.length ? arr.reduce((s, r) => s + Number(r[col] || 0), 0) / arr.length : null;
+    // Aggregate raw rows by WEIGHTED AVERAGE per year and period
+    // Raw rows have: year, weight, tavg_avg, sra_annual, tavg_m1..m12
+    
+    // Group rows by year
+    const rowsByYear = {};
+    rows.forEach(row => {
+      if (!rowsByYear[row.year]) {
+        rowsByYear[row.year] = [];
+      }
+      rowsByYear[row.year].push(row);
+    });
+
+    console.log('[COMPUTE DEBUG] Rows grouped by year. Years:', Object.keys(rowsByYear).map(y => parseInt(y)));
+
+    // Weighted average per year
+    const yearlyAgg = Object.entries(rowsByYear).map(([year, yearRows]) => {
+      const totalWeight = yearRows.reduce((s, r) => s + (r.weight || 0), 0);
+      if (totalWeight === 0) {
+        return { year: parseInt(year), T_year: 0, R_year: 0, monthlyTemps: Array(12).fill(0) };
+      }
+
+      const T_year = yearRows.reduce((s, r) => s + (r.tavg_avg || 0) * (r.weight || 0), 0) / totalWeight;
+      const R_year = yearRows.reduce((s, r) => s + (r.sra_annual || 0) * (r.weight || 0), 0) / totalWeight;
+      
+      const monthlyTemps = Array.from({ length: 12 }, (_, i) => {
+        const col = `tavg_m${i + 1}`;
+        return yearRows.reduce((s, r) => s + (r[col] || 0) * (r.weight || 0), 0) / totalWeight;
+      });
+
+      return { year: parseInt(year), T_year, R_year, monthlyTemps };
+    });
+
+    console.log('[COMPUTE DEBUG] Yearly aggregates:', yearlyAgg.map(y => ({
+      year: y.year,
+      T_year: y.T_year,
+      R_year: y.R_year
+    })));
+
+    // Group by period
+    const normals = {
+      old: yearlyAgg.filter(y => y.year <= 1990),
+      new: yearlyAgg.filter(y => y.year >= 1991 && y.year <= 2020),
+      future: yearlyAgg.filter(y => y.year >= 2041)
+    };
+
+    // Average per period
+    const avg = (arr, key) =>
+      arr.length ? arr.reduce((s, item) => s + (item[key] || 0), 0) / arr.length : null;
 
     const avgMonthly = (arr) =>
-      Array.from({ length: 12 }, (_, i) => avg(arr, `tavg_m${i + 1}`));
-
-    const normals = {
-      old: rows.filter(r => r.year <= 1990),
-      new: rows.filter(r => r.year >= 1991 && r.year <= 2020),
-      future: rows.filter(r => r.year >= 2041)
-    };
+      Array.from({ length: 12 }, (_, i) =>
+        arr.length ? arr.reduce((s, item) => s + (item.monthlyTemps[i] || 0), 0) / arr.length : null
+      );
 
     const normalsArray = [
       {
@@ -278,15 +337,6 @@ async function computeClimateForGeometry(geomOnly, label) {
       console.error('[ERROR] Normals count - old:', normals.old.length, 'new:', normals.new.length, 'future:', normals.future.length);
       throw new Error('Climate data computation returned all zeros. Possible geometry/data mismatch.');
     }
-      },
-      {
-        key: "future",
-        label: "Predikce 2050 (>=2041)",
-        T: avg(normals.future, "T_year"),
-        R: avg(normals.future, "R_year"),
-        monthlyTemps: avgMonthly(normals.future)
-      }
-    ];
 
     const computationTime = Date.now();
 
