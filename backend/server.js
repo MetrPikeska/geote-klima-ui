@@ -11,8 +11,9 @@ const app = express();
 app.use(cors());
 
 // Increase JSON parsing limits for large geometries
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb" }));
+// IMPORTANT: Use extended: true for large URL-encoded data
+app.use(express.json({ limit: "50mb", strict: false }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // Debug logging middleware
 app.use((req, res, next) => {
@@ -206,6 +207,17 @@ async function computeClimateForGeometry(geomOnly, label) {
     const result = await pool.query(sql, [jsonGeom]);
     const rows = result.rows;
 
+    console.log('[SQL DEBUG] Query executed. Rows returned:', rows.length);
+    if (rows.length > 0) {
+      console.log('[SQL DEBUG] First row years:', rows.map(r => r.year).slice(0, 5));
+      console.log('[SQL DEBUG] Sample row:', {
+        year: rows[0].year,
+        T_year: rows[0].T_year,
+        R_year: rows[0].R_year,
+        tavg_m1: rows[0].tavg_m1
+      });
+    }
+
     if (!rows || rows.length === 0) {
       return null;
     }
@@ -246,6 +258,36 @@ async function computeClimateForGeometry(geomOnly, label) {
       }
     ];
 
+    // Log computed normals for debugging
+    console.log('[COMPUTE DEBUG] Normals computed:', normalsArray.map(n => ({
+      label: n.label,
+      T: n.T,
+      R: n.R,
+      hasMonthly: Array.isArray(n.monthlyTemps) && n.monthlyTemps.length > 0
+    })));
+
+    // Check for all-zero results and throw error
+    const allZero = normalsArray.every(n => 
+      (n.T === null || n.T === 0) && 
+      (n.R === null || n.R === 0) &&
+      (!Array.isArray(n.monthlyTemps) || n.monthlyTemps.every(m => m === null || m === 0))
+    );
+
+    if (allZero) {
+      console.error('[ERROR] All computed values are zero! Data issue detected.');
+      console.error('[ERROR] Normals count - old:', normals.old.length, 'new:', normals.new.length, 'future:', normals.future.length);
+      throw new Error('Climate data computation returned all zeros. Possible geometry/data mismatch.');
+    }
+      },
+      {
+        key: "future",
+        label: "Predikce 2050 (>=2041)",
+        T: avg(normals.future, "T_year"),
+        R: avg(normals.future, "R_year"),
+        monthlyTemps: avgMonthly(normals.future)
+      }
+    ];
+
     const computationTime = Date.now();
 
     // Save to cache
@@ -276,6 +318,14 @@ app.post("/climate/polygon", async (req, res) => {
 
   try {
     const { geometry, geometries, label, labels } = req.body;
+    
+    // Log what we received
+    if (geometry) {
+      console.log('[RECEIVED] Single geometry, type:', geometry.type, 'coords length:', geometry.coordinates?.length);
+    }
+    if (geometries) {
+      console.log('[RECEIVED] Batch with', geometries.length, 'geometries');
+    }
 
     // Determine if single or batch
     const isBatch = Array.isArray(geometries) && geometries.length > 0;
