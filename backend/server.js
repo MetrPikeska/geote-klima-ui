@@ -178,8 +178,6 @@ app.post("/climate/polygon", async (req, res) => {
           sra_m1 + sra_m2 + sra_m3 + sra_m4 + sra_m5 + sra_m6 +
           sra_m7 + sra_m8 + sra_m9 + sra_m10 + sra_m11 + sra_m12
         )) AS R_year,
-        SUM(weight * de_martonne) AS de_martonne,
-        SUM(weight * pet) AS pet,
         ${Array.from({ length: 12 }, (_, i) =>
           `SUM(weight * tavg_m${i + 1}) AS tavg_m${i + 1}`
         ).join(",")}
@@ -219,27 +217,21 @@ app.post("/climate/polygon", async (req, res) => {
         label: "Starý normál (<=1990)",
         T: avg(normals.old, "T_year"),
         R: avg(normals.old, "R_year"),
-        monthlyTemps: avgMonthly(normals.old),
-        de_martonne: avg(normals.old, "de_martonne"),
-        pet: avg(normals.old, "pet")
+        monthlyTemps: avgMonthly(normals.old)
       },
       {
         key: "new",
         label: "Nový normál (1991–2020)",
         T: avg(normals.new, "T_year"),
         R: avg(normals.new, "R_year"),
-        monthlyTemps: avgMonthly(normals.new),
-        de_martonne: avg(normals.new, "de_martonne"),
-        pet: avg(normals.new, "pet")
+        monthlyTemps: avgMonthly(normals.new)
       },
       {
         key: "future",
         label: "Predikce 2050 (>=2041)",
         T: avg(normals.future, "T_year"),
         R: avg(normals.future, "R_year"),
-        monthlyTemps: avgMonthly(normals.future),
-        de_martonne: avg(normals.future, "de_martonne"),
-        pet: avg(normals.future, "pet")
+        monthlyTemps: avgMonthly(normals.future)
       }
     ];
 
