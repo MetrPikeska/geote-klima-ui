@@ -11,6 +11,24 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json({ limit: "10mb" }));
 
+// Debug logging middleware
+app.use((req, res, next) => {
+  if (req.method === 'POST' && req.path === '/climate/polygon') {
+    console.log('[DEBUG BACKEND] Incoming POST /climate/polygon');
+    console.log('[DEBUG] Content-Type:', req.headers['content-type']);
+    console.log('[DEBUG] Body type:', typeof req.body);
+    console.log('[DEBUG] Body keys:', Object.keys(req.body || {}));
+    if (req.body?.geometry) {
+      console.log('[DEBUG] Geometry type:', req.body.geometry.type);
+      console.log('[DEBUG] Geometry coords sample:', String(req.body.geometry.coordinates).slice(0, 50));
+    }
+    if (req.body?.geometries) {
+      console.log('[DEBUG] Geometries count:', req.body.geometries.length);
+    }
+  }
+  next();
+});
+
 // ============================================================
 //   HELPER: Generate hash for geometry (for cache lookup)
 // ============================================================

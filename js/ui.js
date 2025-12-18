@@ -125,6 +125,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const selection = getCurrentSelection();
+      console.log('[DEBUG] Current Selection:', {
+        type: selection?.type,
+        label: selection?.label,
+        hasGeometry: !!selection?.geometry,
+        geometryType: selection?.geometry?.type,
+        geometryCoords: selection?.geometry?.coordinates ? `array(${selection.geometry.coordinates.length})` : 'N/A'
+      });
+
       if (!selection) {
         statusMessage.textContent = "Select a unit or load/draw a polygon.";
         stopStopwatch();

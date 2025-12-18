@@ -59,13 +59,25 @@ ClimateApp.api = (function () {
 
     const startTime = performance.now();
     try {
+      const body = {
+        geometry: selection.geometry,
+        label: selection.label
+      };
+      
+      console.log('[DEBUG] fetchClimateForUnit - Building request:', {
+        label: body.label,
+        geometryType: body.geometry?.type,
+        geometryHasCoords: !!body.geometry?.coordinates
+      });
+      
+      const bodyString = JSON.stringify(body);
+      console.log('[DEBUG] fetchClimateForUnit - JSON stringified length:', bodyString.length);
+      console.log('[DEBUG] fetchClimateForUnit - JSON preview (first 200 chars):', bodyString.slice(0, 200));
+
       const res = await fetch(`${ClimateApp.config.BACKEND_URL}/climate/polygon`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          geometry: selection.geometry,
-          label: selection.label
-        })
+        body: bodyString
       });
 
       const endTime = performance.now();
@@ -78,6 +90,13 @@ ClimateApp.api = (function () {
           error: 'Unknown error',
           message: `HTTP ${res.status}: ${res.statusText}`
         }));
+
+        console.error('[DEBUG] fetchClimateForUnit - HTTP error response:', {
+          status: res.status,
+          error: errorData.error,
+          message: errorData.message,
+          details: errorData.details
+        });
 
         throw {
           status: res.status,
