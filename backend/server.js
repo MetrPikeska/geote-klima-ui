@@ -1,5 +1,5 @@
-// === server.js WITH CACHING ===
-// Backend s podporou cachování výsledků do databáze
+// === server.js WITH CACHING + BATCH SUPPORT ===
+// Backend s podporou cachování výsledků do databáze a dávkovým zpracováním
 
 const express = require("express");
 const cors = require("cors");
@@ -72,144 +72,49 @@ async function saveToCache(geometryHash, unitType, unitId, normals, computationT
 }
 
 // ============================================================
-//   /climate/polygon WITH CACHING
+//   HELPER: Compute climate for a single geometry
 // ============================================================
-app.post("/climate/polygon", async (req, res) => {
-  const startTime = Date.now();
-
+async function computeClimateForGeometry(geomOnly, label) {
   try {
-    const { geometry, label } = req.body;
+    const hash = getGeometryHash(geomOnly);
 
-    // Validation
-    if (!geometry) {
-      return res.status(400).json({
-        error: "Missing geometry",
-        message: "Request must include a 'geometry' field with valid GeoJSON"
-      });
-    }
-
-    const geomOnly = geometry.type === "Feature" ? geometry.geometry : geometry;
-
-    if (!geomOnly.type || !geomOnly.coordinates) {
-      return res.status(400).json({
-        error: "Invalid geometry format",
-        message: "Geometry must have 'type' and 'coordinates' properties"
-      });
-    }
-
-    // Generate hash for cache lookup
-    const geometryHash = getGeometryHash(geomOnly);
-
-    // JSON representation of incoming geometry (used for SQL queries and export)
-    const jsonGeom = JSON.stringify(geomOnly);
-
-    // Helper to guess whether incoming GeoJSON is already in EPSG:5514
-    function detectLikely5514(g) {
-      try {
-        const stack = [g.coordinates];
-        while (stack.length) {
-          const v = stack.pop();
-          if (Array.isArray(v)) {
-            for (const item of v) stack.push(item);
-          } else if (typeof v === 'number') {
-            if (Math.abs(v) > 1000) return true;
-          }
-        }
-      } catch (e) {
-        // fallback
-      }
-      return false;
-    }
-
-    const incomingIs5514 = detectLikely5514(geomOnly);
-
-    // 🔍 CHECK CACHE FIRST
-    const cached = await getCachedResult(geometryHash);
-
+    // Check cache first
+    const cached = await getCachedResult(hash);
     if (cached) {
-      console.log(`✅ Cache HIT for geometry hash: ${geometryHash}`);
-      console.log(`   Original computation: ${cached.computation_time_ms}ms`);
-      console.log(`   Cached ${Math.round((Date.now() - new Date(cached.computed_at).getTime()) / 1000 / 60)} minutes ago`);
-
-      const duration = Date.now() - startTime;
-
-      const normalsFromCache = [
-        {
-          key: "old",
-          label: "Starý normál (<=1990)",
-          T: parseFloat(cached.old_normal_t),
-          R: parseFloat(cached.old_normal_r),
-          monthlyTemps: cached.old_normal_temps
-        },
-        {
-          key: "new",
-          label: "Nový normál (1991–2020)",
-          T: parseFloat(cached.new_normal_t),
-          R: parseFloat(cached.new_normal_r),
-          monthlyTemps: cached.new_normal_temps
-        },
-        {
-          key: "future",
-          label: "Predikce 2050 (>=2041)",
-          T: parseFloat(cached.future_normal_t),
-          R: parseFloat(cached.future_normal_r),
-          monthlyTemps: cached.future_normal_temps
-        }
-      ];
-
-      // Decide if the client requested GeoJSON export
-      const wantsGeoJSON = (req.query && req.query.export === 'geojson') ||
-        (req.headers && req.headers.accept && req.headers.accept.includes('geo+json')) ||
-        (req.body && req.body.export === 'geojson');
-
-      if (wantsGeoJSON) {
-        // Build a feature collection with the input geometry transformed to EPSG:4326
-        try {
-          const geomSql = incomingIs5514
-            ? "ST_AsGeoJSON(ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($1)::geometry,5514),4326)) as gj"
-            : "ST_AsGeoJSON(ST_SetSRID(ST_GeomFromGeoJSON($1)::geometry,4326)) as gj";
-          const gres = await pool.query(`SELECT ${geomSql}`, [jsonGeom]);
-          const geomJSON = gres.rows[0] && gres.rows[0].gj ? JSON.parse(gres.rows[0].gj) : geomOnly;
-
-          const feature = {
-            type: 'Feature',
-            geometry: geomJSON,
-            properties: {
-              unitName: label || cached.unit_id || 'Vlastní polygon',
-              normals: normalsFromCache,
-              cached: true,
-              cacheAge: Math.round((Date.now() - new Date(cached.computed_at).getTime()) / 1000),
-              originalComputationTime: cached.computation_time_ms,
-              currentResponseTime: duration
-            }
-          };
-
-          const fc = { type: 'FeatureCollection', features: [feature] };
-          res.set('Content-Type', 'application/geo+json');
-          return res.send(fc);
-        } catch (e) {
-          console.warn('Failed to produce GeoJSON export from cache:', e.message);
-          // fallthrough to standard JSON response
-        }
-      }
-
-      return res.json({
-        unitName: label || cached.unit_id || "Vlastní polygon",
-        normals: normalsFromCache,
+      console.log(`✅ Cache HIT for hash: ${hash.slice(0, 8)}...`);
+      return {
         cached: true,
-        cacheAge: Math.round((Date.now() - new Date(cached.computed_at).getTime()) / 1000),
-        originalComputationTime: cached.computation_time_ms,
-        currentResponseTime: duration
-      });
+        unitName: label || cached.unit_id || "Vlastní polygon",
+        normals: [
+          {
+            key: "old",
+            label: "Starý normál (<=1990)",
+            T: parseFloat(cached.old_normal_t),
+            R: parseFloat(cached.old_normal_r),
+            monthlyTemps: JSON.parse(cached.old_normal_temps || '[]')
+          },
+          {
+            key: "new",
+            label: "Nový normál (1991–2020)",
+            T: parseFloat(cached.new_normal_t),
+            R: parseFloat(cached.new_normal_r),
+            monthlyTemps: JSON.parse(cached.new_normal_temps || '[]')
+          },
+          {
+            key: "future",
+            label: "Predikce 2050 (>=2041)",
+            T: parseFloat(cached.future_normal_t),
+            R: parseFloat(cached.future_normal_r),
+            monthlyTemps: JSON.parse(cached.future_normal_temps || '[]')
+          }
+        ],
+        computationTimeMs: cached.computation_time_ms
+      };
     }
 
-    // ❌ CACHE MISS - perform computation
-    console.log(`❌ Cache MISS for geometry hash: ${geometryHash}`);
-    console.log(`   Computing new result...`);
-
+    // Cache miss - compute
     const jsonGeom = JSON.stringify(geomOnly);
 
-    // Determine if incoming GeoJSON is likely in EPSG:5514 (large coordinate values)
     function detectLikely5514(g) {
       try {
         const stack = [g.coordinates];
@@ -218,14 +123,10 @@ app.post("/climate/polygon", async (req, res) => {
           if (Array.isArray(v)) {
             for (const item of v) stack.push(item);
           } else if (typeof v === 'number') {
-            // Found a numeric coordinate value; we need pairs - check magnitude
-            // If absolute value is large (>1000), it's likely not lon/lat (4326)
             if (Math.abs(v) > 1000) return true;
           }
         }
-      } catch (e) {
-        // fallback
-      }
+      } catch (e) {}
       return false;
     }
 
@@ -234,7 +135,6 @@ app.post("/climate/polygon", async (req, res) => {
       ? "ST_SetSRID(ST_GeomFromGeoJSON($1)::geometry, 5514)"
       : "ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($1)::geometry, 4326), 5514)";
 
-    // Original SQL query (same as before)
     const sql = `
       WITH poly AS (
         SELECT ${geomExpr} AS geom
@@ -269,38 +169,19 @@ app.post("/climate/polygon", async (req, res) => {
       ORDER BY year;
     `;
 
-      let rows;
-      try {
-        console.log('[SQL] Executing climate aggregation query');
-        console.log('[SQL] Query preview:', sql.slice(0, 400).replace(/\s+/g, ' '));
-        console.log('[SQL] JSON geom length:', jsonGeom ? jsonGeom.length : 0);
-        const result = await pool.query(sql, [jsonGeom]);
-        rows = result.rows;
-      } catch (queryErr) {
-        console.error('[SQL] Query failed:', queryErr.message);
-        console.error('[SQL] Full error:', queryErr);
-        console.error('[SQL] Full SQL:', sql);
-        try { console.error('[SQL] JSON geom (truncated):', (jsonGeom||'').slice(0,2000)); } catch(e) { /* ignore */ }
-        throw queryErr;
-      }
+    const result = await pool.query(sql, [jsonGeom]);
+    const rows = result.rows;
 
     if (!rows || rows.length === 0) {
-      return res.status(404).json({
-        error: "No climate data found",
-        message: "The provided polygon does not intersect with any climate data."
-      });
+      return null;
     }
 
-    // Helper functions
     const avg = (arr, col) =>
-      arr.length
-        ? arr.reduce((s, r) => s + Number(r[col] || 0), 0) / arr.length
-        : null;
+      arr.length ? arr.reduce((s, r) => s + Number(r[col] || 0), 0) / arr.length : null;
 
     const avgMonthly = (arr) =>
       Array.from({ length: 12 }, (_, i) => avg(arr, `tavg_m${i + 1}`));
 
-    // Split into normals
     const normals = {
       old: rows.filter(r => r.year <= 1990),
       new: rows.filter(r => r.year >= 1991 && r.year <= 2020),
@@ -331,66 +212,184 @@ app.post("/climate/polygon", async (req, res) => {
       }
     ];
 
-    const computationTime = Date.now() - startTime;
+    const computationTime = Date.now();
 
-    // 💾 SAVE TO CACHE
+    // Save to cache
     try {
-      await saveToCache(
-        geometryHash,
-        'custom', // unit type
-        label || 'custom_polygon',
-        normalsArray,
-        computationTime
-      );
-      console.log(`✅ Result saved to cache (${computationTime}ms)`);
-    } catch (cacheError) {
-      console.warn('⚠️  Failed to save to cache:', cacheError.message);
-      // Continue anyway - caching is optional
+      await saveToCache(hash, 'custom', label || 'custom_polygon', normalsArray, computationTime);
+      console.log(`✅ Cache saved (${hash.slice(0, 8)}...)`);
+    } catch (e) {
+      console.warn('Cache save failed:', e.message);
+    }
+
+    return {
+      cached: false,
+      unitName: label || "Vlastní polygon",
+      normals: normalsArray,
+      computationTimeMs: computationTime
+    };
+  } catch (err) {
+    console.error("Compute error for geometry:", err.message);
+    throw err;
+  }
+}
+
+// ============================================================
+//   /climate/polygon - SUPPORTS SINGLE & BATCH
+// ============================================================
+app.post("/climate/polygon", async (req, res) => {
+  const startTime = Date.now();
+
+  try {
+    const { geometry, geometries, label, labels } = req.body;
+
+    // Determine if single or batch
+    const isBatch = Array.isArray(geometries) && geometries.length > 0;
+
+    if (!isBatch && !geometry) {
+      return res.status(400).json({
+        error: "Missing geometry",
+        message: "Request must include 'geometry' (single) or 'geometries' (array)"
+      });
+    }
+
+    // BATCH REQUEST
+    if (isBatch) {
+      const results = [];
+      for (let i = 0; i < geometries.length; i++) {
+        try {
+          const geom = geometries[i];
+          const geomOnly = geom.type === "Feature" ? geom.geometry : geom;
+
+          if (!geomOnly.type || !geomOnly.coordinates) {
+            results.push({
+              index: i,
+              error: "Invalid geometry format",
+              unitName: labels && labels[i] ? labels[i] : `Unit ${i + 1}`
+            });
+            continue;
+          }
+
+          const unitLabel = labels && labels[i] ? labels[i] : `Unit ${i + 1}`;
+          const result = await computeClimateForGeometry(geomOnly, unitLabel);
+
+          if (result) {
+            results.push({ index: i, ...result });
+          } else {
+            results.push({
+              index: i,
+              error: "No climate data found",
+              unitName: unitLabel
+            });
+          }
+        } catch (e) {
+          console.error(`Batch item ${i} error:`, e.message);
+          results.push({
+            index: i,
+            error: e.message,
+            unitName: labels && labels[i] ? labels[i] : `Unit ${i + 1}`
+          });
+        }
+      }
+
+      const duration = Date.now() - startTime;
+      return res.json({
+        batch: true,
+        count: geometries.length,
+        results,
+        totalTimeMs: duration
+      });
+    }
+
+    // SINGLE REQUEST
+    const geomOnly = geometry.type === "Feature" ? geometry.geometry : geometry;
+
+    if (!geomOnly.type || !geomOnly.coordinates) {
+      return res.status(400).json({
+        error: "Invalid geometry format",
+        message: "Geometry must have 'type' and 'coordinates' properties"
+      });
+    }
+
+    const result = await computeClimateForGeometry(geomOnly, label);
+    const duration = Date.now() - startTime;
+
+    if (!result) {
+      return res.status(404).json({
+        error: "No climate data found",
+        message: "The provided polygon does not intersect with any climate data."
+      });
+    }
+
+    // Check if GeoJSON export requested
+    const wantsGeoJSON = (req.query && req.query.export === 'geojson') ||
+      (req.headers && req.headers.accept && req.headers.accept.includes('geo+json')) ||
+      (req.body && req.body.export === 'geojson');
+
+    if (wantsGeoJSON) {
+      try {
+        const jsonGeom = JSON.stringify(geomOnly);
+        function detectLikely5514(g) {
+          try {
+            const stack = [g.coordinates];
+            while (stack.length) {
+              const v = stack.pop();
+              if (Array.isArray(v)) {
+                for (const item of v) stack.push(item);
+              } else if (typeof v === 'number') {
+                if (Math.abs(v) > 1000) return true;
+              }
+            }
+          } catch (e) {}
+          return false;
+        }
+        const incomingIs5514 = detectLikely5514(geomOnly);
+        const geomSql = incomingIs5514
+          ? "ST_AsGeoJSON(ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($1)::geometry,5514),4326)) as gj"
+          : "ST_AsGeoJSON(ST_SetSRID(ST_GeomFromGeoJSON($1)::geometry,4326)) as gj";
+        const gres = await pool.query(`SELECT ${geomSql}`, [jsonGeom]);
+        const geomJSON = gres.rows[0] && gres.rows[0].gj ? JSON.parse(gres.rows[0].gj) : geomOnly;
+
+        const feature = {
+          type: 'Feature',
+          geometry: geomJSON,
+          properties: {
+            unitName: label || 'Vlastní polygon',
+            normals: result.normals,
+            cached: result.cached,
+            computationTimeMs: result.computationTimeMs,
+            currentResponseTime: duration
+          }
+        };
+
+        const fc = { type: 'FeatureCollection', features: [feature] };
+        res.set('Content-Type', 'application/geo+json');
+        return res.send(fc);
+      } catch (e) {
+        console.warn('GeoJSON export failed:', e.message);
+        // Fallback to JSON
+      }
     }
 
     res.json({
-      unitName: label || "Vlastní polygon",
-      normals: normalsArray,
-      cached: false,
-      computationTime: computationTime
+      ...result,
+      currentResponseTime: duration
     });
 
   } catch (err) {
     console.error("=".repeat(60));
-    console.error("BACKEND ERROR:", err);
-    console.error("Error code:", err.code);
-    console.error("Error message:", err.message);
-    console.error("Error stack:", err.stack);
+    console.error("BACKEND ERROR:", err.message);
+    console.error(err.stack);
     console.error("=".repeat(60));
 
-    if (err.code === '22P02') {
-      return res.status(400).json({
-        error: "Invalid GeoJSON",
-        message: "The provided geometry could not be parsed.",
-        details: err.message
-      });
-    }
-
-    if (err.code === 'ECONNREFUSED') {
-      return res.status(503).json({
-        error: "Database unavailable",
-        message: "Cannot connect to the database."
-      });
-    }
-
-    console.error('❌ Server error:', err);
-      console.error('[BACKEND] Sending 500 response with error details');
-      res.status(500).json({
-        status: 500,
-        error: "Internal server error",
-        message: "An unexpected error occurred while processing your request.",
-        details: err && err.message ? err.message : undefined,
-        stack: err && err.stack ? err.stack : undefined,
-        duration: ((Date.now() - startTime) / 1000).toFixed(2)
-      });
+    res.status(500).json({
+      error: "Internal server error",
+      message: err.message,
+      duration: ((Date.now() - startTime) / 1000).toFixed(2)
+    });
   }
 });
 
 app.listen(4000, () =>
-  console.log("Backend WITH CACHING běží na http://localhost:4000")
+  console.log("Backend WITH CACHING + BATCH běží na http://localhost:4000")
 );

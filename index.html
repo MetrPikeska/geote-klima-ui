@@ -49,11 +49,19 @@
           <option value="custom">Custom Polygon</option>
         </select>
 
+        <div style="margin-top: 8px; margin-bottom: 8px;">
+          <label style="display: flex; align-items: center; gap: 6px;">
+            <input type="checkbox" id="multiSelectMode" />
+            Multi-select mode (Shift+click)
+          </label>
+        </div>
+
         <div id="unitSelectWrapper">
           <label for="unitSelect">Select Unit</label>
-          <select id="unitSelect">
+          <select id="unitSelect" multiple="false">
             <option value="">Loading…</option>
           </select>
+          <p id="selectionCount" style="font-size: 0.9em; color: #666; margin-top: 4px; display: none;"></p>
         </div>
 
         <p class="hint" id="customPolygonHint" style="display:none;">
@@ -86,6 +94,7 @@
 
       <section class="control-section">
         <button id="computeBtn" class="primary-btn">Calculate</button>
+        <button id="computeAllBtn" class="primary-btn" style="display:none;">Calculate All</button>
         <p id="statusMessage" class="status"></p>
         <div id="stopwatch">Calculation time: 0.00 s</div>
       </section>
@@ -118,6 +127,9 @@
           <h2>Results</h2>
           <div id="resultsSummary" class="summary-box">
             <p>No calculation has been performed yet.</p>
+          </div>
+          <div style="margin-top:8px;">
+            <button id="exportGeoBtn" style="display:none;" class="secondary-btn">Export GeoJSON</button>
           </div>
         </section>
       </div>

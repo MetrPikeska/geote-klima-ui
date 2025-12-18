@@ -121,10 +121,87 @@ ClimateApp.api = (function () {
     }
   }
 
+  // Request GeoJSON export (returns parsed JSON FeatureCollection)
+  async function fetchClimateGeoJSON(selection) {
+    try {
+      const res = await fetch(`${ClimateApp.config.BACKEND_URL}/climate/polygon?export=geojson`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/geo+json,application/json" },
+        body: JSON.stringify({ geometry: selection.geometry, label: selection.label, export: 'geojson' })
+      });
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        throw new Error(`Export failed: HTTP ${res.status} ${res.statusText} ${txt}`);
+      }
+
+      const text = await res.text();
+      return JSON.parse(text);
+  // Batch compute for multiple selections
+  async function fetchClimateForUnits(selections, onProgress = () => {}) {
+    const startTime = performance.now();
+    try {
+      const geometries = selections.map(s => s.geometry);
+      const labels = selections.map(s => s.label);
+
+      const res = await fetch(`${ClimateApp.config.BACKEND_URL}/climate/polygon`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ geometries, labels })
+      });
+
+      const endTime = performance.now();
+      const duration = (endTime - startTime).toFixed(2);
+      onProgress(duration);
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({
+          error: 'Unknown error',
+          message: `HTTP ${res.status}: ${res.statusText}`
+        }));
+
+        throw {
+          status: res.status,
+          error: errorData.error || 'Request failed',
+          message: errorData.message || res.statusText,
+          duration: duration
+        };
+      }
+
+      const data = await res.json();
+      return { ...data, duration: duration };
+
+    } catch (err) {
+      const endTime = performance.now();
+      const duration = (endTime - startTime).toFixed(2);
+      onProgress(duration);
+
+      console.error("Batch compute error:", err);
+
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        alert(`❌ Chyba spojení!\n\nNelze se připojit k backendu na ${ClimateApp.config.BACKEND_URL}`);
+        throw {
+          error: 'Network error',
+          message: 'Cannot connect to backend',
+          duration: duration
+        };
+      }
+
+      if (err.status) {
+        alert(`❌ Chyba při výpočtu!\n\n${err.message || err.error}`);
+        throw err;
+      }
+
+      alert(`❌ Neočekávaná chyba!\n\n${err.message || err}`);
+      throw { error: err, duration: duration };
+    }
+  }
 
   return {
     fetchUnits,
     fetchClimateForUnit,
+    fetchClimateGeoJSON,
+    fetchClimateForUnits
   };
 
 })();
