@@ -100,6 +100,29 @@ app.post("/climate/polygon", async (req, res) => {
     // Generate hash for cache lookup
     const geometryHash = getGeometryHash(geomOnly);
 
+    // JSON representation of incoming geometry (used for SQL queries and export)
+    const jsonGeom = JSON.stringify(geomOnly);
+
+    // Helper to guess whether incoming GeoJSON is already in EPSG:5514
+    function detectLikely5514(g) {
+      try {
+        const stack = [g.coordinates];
+        while (stack.length) {
+          const v = stack.pop();
+          if (Array.isArray(v)) {
+            for (const item of v) stack.push(item);
+          } else if (typeof v === 'number') {
+            if (Math.abs(v) > 1000) return true;
+          }
+        }
+      } catch (e) {
+        // fallback
+      }
+      return false;
+    }
+
+    const incomingIs5514 = detectLikely5514(geomOnly);
+
     // 🔍 CHECK CACHE FIRST
     const cached = await getCachedResult(geometryHash);
 
@@ -110,31 +133,69 @@ app.post("/climate/polygon", async (req, res) => {
 
       const duration = Date.now() - startTime;
 
+      const normalsFromCache = [
+        {
+          key: "old",
+          label: "Starý normál (<=1990)",
+          T: parseFloat(cached.old_normal_t),
+          R: parseFloat(cached.old_normal_r),
+          monthlyTemps: cached.old_normal_temps
+        },
+        {
+          key: "new",
+          label: "Nový normál (1991–2020)",
+          T: parseFloat(cached.new_normal_t),
+          R: parseFloat(cached.new_normal_r),
+          monthlyTemps: cached.new_normal_temps
+        },
+        {
+          key: "future",
+          label: "Predikce 2050 (>=2041)",
+          T: parseFloat(cached.future_normal_t),
+          R: parseFloat(cached.future_normal_r),
+          monthlyTemps: cached.future_normal_temps
+        }
+      ];
+
+      // Decide if the client requested GeoJSON export
+      const wantsGeoJSON = (req.query && req.query.export === 'geojson') ||
+        (req.headers && req.headers.accept && req.headers.accept.includes('geo+json')) ||
+        (req.body && req.body.export === 'geojson');
+
+      if (wantsGeoJSON) {
+        // Build a feature collection with the input geometry transformed to EPSG:4326
+        try {
+          const geomSql = incomingIs5514
+            ? "ST_AsGeoJSON(ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($1)::geometry,5514),4326)) as gj"
+            : "ST_AsGeoJSON(ST_SetSRID(ST_GeomFromGeoJSON($1)::geometry,4326)) as gj";
+          const gres = await pool.query(`SELECT ${geomSql}`, [jsonGeom]);
+          const geomJSON = gres.rows[0] && gres.rows[0].gj ? JSON.parse(gres.rows[0].gj) : geomOnly;
+
+          const feature = {
+            type: 'Feature',
+            geometry: geomJSON,
+            properties: {
+              unitName: label || cached.unit_id || 'Vlastní polygon',
+              normals: normalsFromCache,
+              cached: true,
+              cacheAge: Math.round((Date.now() - new Date(cached.computed_at).getTime()) / 1000),
+              originalComputationTime: cached.computation_time_ms,
+              currentResponseTime: duration
+            }
+          };
+
+          const fc = { type: 'FeatureCollection', features: [feature] };
+          res.set('Content-Type', 'application/geo+json');
+          return res.send(fc);
+        } catch (e) {
+          console.warn('Failed to produce GeoJSON export from cache:', e.message);
+          // fallthrough to standard JSON response
+        }
+      }
+
       return res.json({
         unitName: label || cached.unit_id || "Vlastní polygon",
-        normals: [
-          {
-            key: "old",
-            label: "Starý normál (<=1990)",
-            T: parseFloat(cached.old_normal_t),
-            R: parseFloat(cached.old_normal_r),
-            monthlyTemps: cached.old_normal_temps
-          },
-          {
-            key: "new",
-            label: "Nový normál (1991–2020)",
-            T: parseFloat(cached.new_normal_t),
-            R: parseFloat(cached.new_normal_r),
-            monthlyTemps: cached.new_normal_temps
-          },
-          {
-            key: "future",
-            label: "Predikce 2050 (>=2041)",
-            T: parseFloat(cached.future_normal_t),
-            R: parseFloat(cached.future_normal_r),
-            monthlyTemps: cached.future_normal_temps
-          }
-        ],
+        normals: normalsFromCache,
         cached: true,
         cacheAge: Math.round((Date.now() - new Date(cached.computed_at).getTime()) / 1000),
         originalComputationTime: cached.computation_time_ms,
