@@ -148,13 +148,35 @@ app.post("/climate/polygon", async (req, res) => {
 
     const jsonGeom = JSON.stringify(geomOnly);
 
+    // Determine if incoming GeoJSON is likely in EPSG:5514 (large coordinate values)
+    function detectLikely5514(g) {
+      try {
+        const stack = [g.coordinates];
+        while (stack.length) {
+          const v = stack.pop();
+          if (Array.isArray(v)) {
+            for (const item of v) stack.push(item);
+          } else if (typeof v === 'number') {
+            // Found a numeric coordinate value; we need pairs - check magnitude
+            // If absolute value is large (>1000), it's likely not lon/lat (4326)
+            if (Math.abs(v) > 1000) return true;
+          }
+        }
+      } catch (e) {
+        // fallback
+      }
+      return false;
+    }
+
+    const incomingIs5514 = detectLikely5514(geomOnly);
+    const geomExpr = incomingIs5514
+      ? "ST_SetSRID(ST_GeomFromGeoJSON($1)::geometry, 5514)"
+      : "ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($1)::geometry, 4326), 5514)";
+
     // Original SQL query (same as before)
     const sql = `
       WITH poly AS (
-        SELECT ST_Transform(
-          ST_SetSRID(ST_GeomFromGeoJSON($1)::geometry, 4326),
-          5514
-        ) AS geom
+        SELECT ${geomExpr} AS geom
       ),
       inter AS (
         SELECT
@@ -186,7 +208,20 @@ app.post("/climate/polygon", async (req, res) => {
       ORDER BY year;
     `;
 
-    const rows = (await pool.query(sql, [jsonGeom])).rows;
+      let rows;
+      try {
+        console.log('[SQL] Executing climate aggregation query');
+        console.log('[SQL] Query preview:', sql.slice(0, 400).replace(/\s+/g, ' '));
+        console.log('[SQL] JSON geom length:', jsonGeom ? jsonGeom.length : 0);
+        const result = await pool.query(sql, [jsonGeom]);
+        rows = result.rows;
+      } catch (queryErr) {
+        console.error('[SQL] Query failed:', queryErr.message);
+        console.error('[SQL] Full error:', queryErr);
+        console.error('[SQL] Full SQL:', sql);
+        try { console.error('[SQL] JSON geom (truncated):', (jsonGeom||'').slice(0,2000)); } catch(e) { /* ignore */ }
+        throw queryErr;
+      }
 
     if (!rows || rows.length === 0) {
       return res.status(404).json({
@@ -283,12 +318,15 @@ app.post("/climate/polygon", async (req, res) => {
     }
 
     console.error('❌ Server error:', err);
-    res.status(500).json({
-      error: "Internal server error",
-      message: "An unexpected error occurred.",
-      details: err.message,
-      stack: err.stack
-    });
+      console.error('[BACKEND] Sending 500 response with error details');
+      res.status(500).json({
+        status: 500,
+        error: "Internal server error",
+        message: "An unexpected error occurred while processing your request.",
+        details: err && err.message ? err.message : undefined,
+        stack: err && err.stack ? err.stack : undefined,
+        duration: ((Date.now() - startTime) / 1000).toFixed(2)
+      });
   }
 });
 
