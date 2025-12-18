@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "command": "node",
+      "args": ["mcp-postgres-server.js"],
+      "env": {
+        "DB_HOST": "localhost",
+        "DB_PORT": "5432",
+        "DB_USER": "postgres",
+        "DB_NAME": "klima"
+      }
+    }
+  }
+}
