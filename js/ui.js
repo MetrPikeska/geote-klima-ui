@@ -369,6 +369,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderBatchResults(batchData, selections) {
+    // Reset map to default position when multiple units are selected
+    if (ClimateApp.state.multiSelectMode && ClimateApp.state.selectedIndices.size > 1) {
+      ClimateApp.map.resetMapToDefault();
+    }
+
     resultsSummary.innerHTML = `<p><strong>Batch Results: ${batchData.results.length} units</strong></p>`;
 
     const tbody = resultsTableBody;
@@ -409,16 +414,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Draw comparison chart (De Martonne across all units)
     const indicatorKey = document.getElementById("indicatorSelect").value;
-    if (currentChart) currentChart.destroy();
     currentChart = renderBatchComparisonChart(resultsChartCanvas, batchData.results, indicatorKey);
   }
 
   function renderBatchComparisonChart(canvas, results, indicatorKey) {
     if (!canvas) return null;
 
-    // Destroy existing chart if it exists
+    // Properly destroy existing chart instance before creating new one
     if (currentChart) {
-      currentChart.destroy();
+      if (typeof currentChart.destroy === 'function') {
+        try {
+          currentChart.destroy();
+        } catch (e) {
+          console.warn('Error destroying previous chart:', e);
+        }
+      }
       currentChart = null;
     }
 

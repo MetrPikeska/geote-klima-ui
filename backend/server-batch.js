@@ -9,42 +9,7 @@ const { pool } = require("./db");
 
 const app = express();
 app.use(cors());
-
-// Increase JSON parsing limits for large geometries
-// IMPORTANT: Use extended: true for large URL-encoded data
-app.use(express.json({ limit: "50mb", strict: false }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
-
-// Debug logging middleware
-app.use((req, res, next) => {
-  if (req.method === 'POST' && req.path === '/climate/polygon') {
-    console.log('[DEBUG BACKEND] Incoming POST /climate/polygon');
-    console.log('[DEBUG] Content-Type:', req.headers['content-type']);
-    console.log('[DEBUG] Body type:', typeof req.body);
-    console.log('[DEBUG] Body keys:', Object.keys(req.body || {}));
-    if (req.body?.geometry) {
-      console.log('[DEBUG] Geometry type:', req.body.geometry.type);
-      console.log('[DEBUG] Geometry coords sample:', String(req.body.geometry.coordinates).slice(0, 50));
-    }
-    if (req.body?.geometries) {
-      console.log('[DEBUG] Geometries count:', req.body.geometries.length);
-    }
-  }
-  next();
-});
-
-// JSON parse error handler
-app.use((err, req, res, next) => {
-  if (err instanceof SyntaxError && 'body' in err) {
-    console.error('[ERROR] JSON Parse Error:', err.message);
-    console.error('[ERROR] Raw body (first 500 chars):', req.body?.slice?.(0, 500));
-    return res.status(400).json({
-      error: 'Invalid JSON',
-      message: err.message
-    });
-  }
-  next(err);
-});
+app.use(bodyParser.json({ limit: "10mb" }));
 
 // ============================================================
 //   HELPER: Generate hash for geometry (for cache lookup)
@@ -111,25 +76,12 @@ async function saveToCache(geometryHash, unitType, unitId, normals, computationT
 // ============================================================
 async function computeClimateForGeometry(geomOnly, label) {
   try {
-    const computeStart = Date.now();
     const hash = getGeometryHash(geomOnly);
 
     // Check cache first
     const cached = await getCachedResult(hash);
     if (cached) {
       console.log(`✅ Cache HIT for hash: ${hash.slice(0, 8)}...`);
-      const safeParse = (val) => {
-        try {
-          if (!val) return [];
-          if (Array.isArray(val)) return val; // already parsed
-          if (typeof val === 'object') return val;
-          return JSON.parse(val);
-        } catch (e) {
-          console.warn('Bad cached JSON in temps, ignoring:', e.message);
-          return [];
-        }
-      };
-
       return {
         cached: true,
         unitName: label || cached.unit_id || "Vlastní polygon",
@@ -137,23 +89,23 @@ async function computeClimateForGeometry(geomOnly, label) {
           {
             key: "old",
             label: "Starý normál (<=1990)",
-            T: cached.old_normal_t != null ? parseFloat(cached.old_normal_t) : null,
-            R: cached.old_normal_r != null ? parseFloat(cached.old_normal_r) : null,
-            monthlyTemps: safeParse(cached.old_normal_temps)
+            T: parseFloat(cached.old_normal_t),
+            R: parseFloat(cached.old_normal_r),
+            monthlyTemps: JSON.parse(cached.old_normal_temps || '[]')
           },
           {
             key: "new",
             label: "Nový normál (1991–2020)",
-            T: cached.new_normal_t != null ? parseFloat(cached.new_normal_t) : null,
-            R: cached.new_normal_r != null ? parseFloat(cached.new_normal_r) : null,
-            monthlyTemps: safeParse(cached.new_normal_temps)
+            T: parseFloat(cached.new_normal_t),
+            R: parseFloat(cached.new_normal_r),
+            monthlyTemps: JSON.parse(cached.new_normal_temps || '[]')
           },
           {
             key: "future",
             label: "Predikce 2050 (>=2041)",
-            T: cached.future_normal_t != null ? parseFloat(cached.future_normal_t) : null,
-            R: cached.future_normal_r != null ? parseFloat(cached.future_normal_r) : null,
-            monthlyTemps: safeParse(cached.future_normal_temps)
+            T: parseFloat(cached.future_normal_t),
+            R: parseFloat(cached.future_normal_r),
+            monthlyTemps: JSON.parse(cached.future_normal_temps || '[]')
           }
         ],
         computationTimeMs: cached.computation_time_ms
@@ -197,114 +149,44 @@ async function computeClimateForGeometry(geomOnly, label) {
         WHERE ST_Intersects(c.geom, p.geom)
       ),
       weights AS (
-        SELECT 
-          *,
+        SELECT *,
           area_intersect / NULLIF(area_poly, 0) AS weight
         FROM inter
         WHERE area_intersect > 0
       )
       SELECT
         year,
-        tavg_avg,
-        (sra_m1 + sra_m2 + sra_m3 + sra_m4 + sra_m5 + sra_m6 +
-         sra_m7 + sra_m8 + sra_m9 + sra_m10 + sra_m11 + sra_m12) AS sra_annual,
-        weight,
+        SUM(weight * tavg_avg) AS T_year,
+        SUM(weight * (
+          sra_m1 + sra_m2 + sra_m3 + sra_m4 + sra_m5 + sra_m6 +
+          sra_m7 + sra_m8 + sra_m9 + sra_m10 + sra_m11 + sra_m12
+        )) AS R_year,
         ${Array.from({ length: 12 }, (_, i) =>
-          `tavg_m${i + 1}`
+          `SUM(weight * tavg_m${i + 1}) AS tavg_m${i + 1}`
         ).join(",")}
       FROM weights
+      GROUP BY year
       ORDER BY year;
     `;
 
-    // Log the query
-    console.log('[SQL DEBUG] Query params - SRID detection:', incomingIs5514 ? '5514' : '4326->5514');
-
-    // First, test if geometry is valid and intersecting
-    const testIntersect = await pool.query(`
-      WITH poly AS (
-        SELECT ${geomExpr} AS geom
-      )
-      SELECT 
-        COUNT(*) as total_climate_cells,
-        (SELECT COUNT(*) FROM climate_master_geom c 
-         CROSS JOIN poly p 
-         WHERE ST_Intersects(c.geom, p.geom)) as intersecting_cells
-      FROM climate_master_geom
-    `, [jsonGeom]);
-    
-    console.log('[SQL DEBUG] Intersection test:', testIntersect.rows[0]);
-
     const result = await pool.query(sql, [jsonGeom]);
     const rows = result.rows;
-
-    console.log('[SQL DEBUG] Query executed. Raw rows returned:', rows.length);
-    if (rows.length > 0) {
-      console.log('[SQL DEBUG] Sample row (raw):', {
-        year: rows[0].year,
-        weight: rows[0].weight,
-        tavg_avg: rows[0].tavg_avg,
-        sra_annual: rows[0].sra_annual,
-        tavg_m1: rows[0].tavg_m1
-      });
-    }
 
     if (!rows || rows.length === 0) {
       return null;
     }
 
-    // Aggregate raw rows by WEIGHTED AVERAGE per year and period
-    // Raw rows have: year, weight, tavg_avg, sra_annual, tavg_m1..m12
-    
-    // Group rows by year
-    const rowsByYear = {};
-    rows.forEach(row => {
-      if (!rowsByYear[row.year]) {
-        rowsByYear[row.year] = [];
-      }
-      rowsByYear[row.year].push(row);
-    });
-
-    console.log('[COMPUTE DEBUG] Rows grouped by year. Years:', Object.keys(rowsByYear).map(y => parseInt(y)));
-
-    // Weighted average per year
-    const yearlyAgg = Object.entries(rowsByYear).map(([year, yearRows]) => {
-      const totalWeight = yearRows.reduce((s, r) => s + (r.weight || 0), 0);
-      if (totalWeight === 0) {
-        return { year: parseInt(year), T_year: 0, R_year: 0, monthlyTemps: Array(12).fill(0) };
-      }
-
-      const T_year = yearRows.reduce((s, r) => s + (r.tavg_avg || 0) * (r.weight || 0), 0) / totalWeight;
-      const R_year = yearRows.reduce((s, r) => s + (r.sra_annual || 0) * (r.weight || 0), 0) / totalWeight;
-      
-      const monthlyTemps = Array.from({ length: 12 }, (_, i) => {
-        const col = `tavg_m${i + 1}`;
-        return yearRows.reduce((s, r) => s + (r[col] || 0) * (r.weight || 0), 0) / totalWeight;
-      });
-
-      return { year: parseInt(year), T_year, R_year, monthlyTemps };
-    });
-
-    console.log('[COMPUTE DEBUG] Yearly aggregates:', yearlyAgg.map(y => ({
-      year: y.year,
-      T_year: y.T_year,
-      R_year: y.R_year
-    })));
-
-    // Group by period
-    const normals = {
-      old: yearlyAgg.filter(y => y.year <= 1990),
-      new: yearlyAgg.filter(y => y.year >= 1991 && y.year <= 2020),
-      future: yearlyAgg.filter(y => y.year >= 2041)
-    };
-
-    // Average per period
-    const avg = (arr, key) =>
-      arr.length ? arr.reduce((s, item) => s + (item[key] || 0), 0) / arr.length : null;
+    const avg = (arr, col) =>
+      arr.length ? arr.reduce((s, r) => s + Number(r[col] || 0), 0) / arr.length : null;
 
     const avgMonthly = (arr) =>
-      Array.from({ length: 12 }, (_, i) =>
-        arr.length ? arr.reduce((s, item) => s + (item.monthlyTemps[i] || 0), 0) / arr.length : null
-      );
+      Array.from({ length: 12 }, (_, i) => avg(arr, `tavg_m${i + 1}`));
+
+    const normals = {
+      old: rows.filter(r => r.year <= 1990),
+      new: rows.filter(r => r.year >= 1991 && r.year <= 2020),
+      future: rows.filter(r => r.year >= 2041)
+    };
 
     const normalsArray = [
       {
@@ -330,28 +212,7 @@ async function computeClimateForGeometry(geomOnly, label) {
       }
     ];
 
-    // Log computed normals for debugging
-    console.log('[COMPUTE DEBUG] Normals computed:', normalsArray.map(n => ({
-      label: n.label,
-      T: n.T,
-      R: n.R,
-      hasMonthly: Array.isArray(n.monthlyTemps) && n.monthlyTemps.length > 0
-    })));
-
-    // Check for all-zero results and throw error
-    const allZero = normalsArray.every(n => 
-      (n.T === null || n.T === 0) && 
-      (n.R === null || n.R === 0) &&
-      (!Array.isArray(n.monthlyTemps) || n.monthlyTemps.every(m => m === null || m === 0))
-    );
-
-    if (allZero) {
-      console.error('[ERROR] All computed values are zero! Data issue detected.');
-      console.error('[ERROR] Normals count - old:', normals.old.length, 'new:', normals.new.length, 'future:', normals.future.length);
-      throw new Error('Climate data computation returned all zeros. Possible geometry/data mismatch.');
-    }
-
-    const computationTime = Date.now() - computeStart;
+    const computationTime = Date.now();
 
     // Save to cache
     try {
@@ -381,14 +242,6 @@ app.post("/climate/polygon", async (req, res) => {
 
   try {
     const { geometry, geometries, label, labels } = req.body;
-    
-    // Log what we received
-    if (geometry) {
-      console.log('[RECEIVED] Single geometry, type:', geometry.type, 'coords length:', geometry.coordinates?.length);
-    }
-    if (geometries) {
-      console.log('[RECEIVED] Batch with', geometries.length, 'geometries');
-    }
 
     // Determine if single or batch
     const isBatch = Array.isArray(geometries) && geometries.length > 0;

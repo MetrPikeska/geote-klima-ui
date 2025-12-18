@@ -227,8 +227,19 @@ ClimateApp.map = (function () {
     });
   }
 
+  function resetMapToDefault() {
+    // Remove the unit layer if displayed
+    if (unitLayer) {
+      map.removeLayer(unitLayer);
+      unitLayer = null;
+    }
+    // Reset map to default center and zoom
+    map.setView([49.8, 15.5], 7);
+  }
+
   return {
     initMap,
-    showUnitGeometry
+    showUnitGeometry,
+    resetMapToDefault
   };
 })();
