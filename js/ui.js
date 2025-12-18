@@ -81,42 +81,60 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // === Multi-select: Unit selection ===
-  unitSelect.addEventListener("click", (e) => {
-    if (!ClimateApp.state.multiSelectMode) return;
-
-    if (!(e.target instanceof HTMLOptionElement)) return;
-
-    const idx = Array.from(unitSelect.options).indexOf(e.target);
-    if (idx <= 0) return; // Skip placeholder
-
-    if (e.shiftKey || e.ctrlKey) {
-      e.preventDefault();
-      e.target.selected = !e.target.selected;
-
-      if (e.target.selected) {
-        ClimateApp.state.selectedIndices.add(idx);
-      } else {
-        ClimateApp.state.selectedIndices.delete(idx);
-      }
-
-      updateSelectionCount();
+  unitSelect.addEventListener("change", (e) => {
+    if (!ClimateApp.state.multiSelectMode) {
+      // Single-select mode - handled below
+      return;
     }
+
+    // In multi-select mode with <select multiple>, options auto-select with Ctrl/Shift
+    // Just rebuild selectedIndices from currently selected options
+    ClimateApp.state.selectedIndices.clear();
+    Array.from(unitSelect.selectedOptions).forEach(option => {
+      const idx = Array.from(unitSelect.options).indexOf(option);
+      if (idx > 0) { // Skip placeholder at index 0
+        ClimateApp.state.selectedIndices.add(idx);
+      }
+    });
+    updateSelectionCount();
+  });
+
+  // Add keyboard support for multi-select
+  unitSelect.addEventListener("keydown", (e) => {
+    if (!ClimateApp.state.multiSelectMode) return;
+    
+    const selectedIndex = unitSelect.selectedIndex;
+    if (selectedIndex < 0) return;
+
+    // On any key in multi-select, just update the indices
+    setTimeout(() => {
+      ClimateApp.state.selectedIndices.clear();
+      Array.from(unitSelect.selectedOptions).forEach(option => {
+        const idx = Array.from(unitSelect.options).indexOf(option);
+        if (idx > 0) {
+          ClimateApp.state.selectedIndices.add(idx);
+        }
+      });
+      updateSelectionCount();
+    }, 0);
   });
 
   // === Single-select: ORP/CHKO selection ===
-  if (!ClimateApp.state.multiSelectMode) {
-    unitSelect.addEventListener("change", () => {
-      const type = unitTypeSelect.value;
-      const id = unitSelect.value;
+  // This runs in parallel with the change handler above - change handler checks mode
+  unitSelect.addEventListener("change", () => {
+    // If multi-select mode, already handled above
+    if (ClimateApp.state.multiSelectMode) return;
 
-      const list = ClimateApp.state.units[type] || [];
-      const selected = list.find(u => String(u.id) === String(id));
+    const type = unitTypeSelect.value;
+    const id = unitSelect.value;
 
-      if (selected) {
-        ClimateApp.map.showUnitGeometry(selected.geom);
-      }
-    });
-  }
+    const list = ClimateApp.state.units[type] || [];
+    const selected = list.find(u => String(u.id) === String(id));
+
+    if (selected) {
+      ClimateApp.map.showUnitGeometry(selected.geom);
+    }
+  });
 
   // === Single calculation ===
   computeBtn.addEventListener("click", async () => {
