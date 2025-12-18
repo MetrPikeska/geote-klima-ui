@@ -137,6 +137,12 @@ ClimateApp.api = (function () {
 
       const text = await res.text();
       return JSON.parse(text);
+    } catch (e) {
+      console.error('fetchClimateGeoJSON error:', e);
+      throw e;
+    }
+  }
+
   // Batch compute for multiple selections
   async function fetchClimateForUnits(selections, onProgress = () => {}) {
     const startTime = performance.now();

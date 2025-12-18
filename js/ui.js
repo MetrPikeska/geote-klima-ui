@@ -240,6 +240,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadUnits(type) {
     try {
+      if (!ClimateApp.api || !ClimateApp.api.fetchUnits) {
+        console.warn("ClimateApp.api not available yet");
+        return;
+      }
       const units = await ClimateApp.api.fetchUnits(type);
       ClimateApp.state.units[type] = units;
       if (type === unitTypeSelect.value) {
