@@ -215,22 +215,22 @@ app.post("/climate/polygon", async (req, res) => {
       {
         key: "old",
         label: "Starý normál (<=1990)",
-        T: avg(normals.old, "t_year"),
-        R: avg(normals.old, "r_year"),
+        T: avg(normals.old, "T_year"),
+        R: avg(normals.old, "R_year"),
         monthlyTemps: avgMonthly(normals.old)
       },
       {
         key: "new",
         label: "Nový normál (1991–2020)",
-        T: avg(normals.new, "t_year"),
-        R: avg(normals.new, "r_year"),
+        T: avg(normals.new, "T_year"),
+        R: avg(normals.new, "R_year"),
         monthlyTemps: avgMonthly(normals.new)
       },
       {
         key: "future",
         label: "Predikce 2050 (>=2041)",
-        T: avg(normals.future, "t_year"),
-        R: avg(normals.future, "r_year"),
+        T: avg(normals.future, "T_year"),
+        R: avg(normals.future, "R_year"),
         monthlyTemps: avgMonthly(normals.future)
       }
     ];
