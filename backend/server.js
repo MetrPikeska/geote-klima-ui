@@ -199,6 +199,145 @@ app.post("/climate/polygon", async (req, res) => {
 
 
 // ============================================================
+//     MCP API ENDPOINT
+// ============================================================
+app.post("/api/mcp/query", async (req, res) => {
+  const { query } = req.body;
+
+  if (!query) {
+    return res.status(400).json({
+      success: false,
+      error: "Query is required",
+    });
+  }
+
+  try {
+    // Simple SQL parsing for common queries
+    const lowerQuery = query.toLowerCase();
+
+    if (
+      lowerQuery.includes("celadna") &&
+      lowerQuery.includes("teplota")
+    ) {
+      // Query for Čeladná temperature
+      const result = await pool.query(`
+        SELECT 
+          naz_obec,
+          year,
+          ROUND(tavg_avg::numeric, 2) as avg_temp,
+          ROUND(AVG(tavg_avg) OVER (PARTITION BY naz_obec)::numeric, 2) as overall_avg
+        FROM climate_master_geom
+        WHERE LOWER(naz_obec) LIKE '%celadna%'
+        ORDER BY year DESC
+        LIMIT 5
+      `);
+
+      return res.json({
+        success: true,
+        result: {
+          query: "Čeladná temperature data",
+          data: result.rows,
+          count: result.rows.length,
+        },
+      });
+    }
+
+    if (lowerQuery.includes("tables")) {
+      // List all tables
+      const result = await pool.query(`
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+        ORDER BY table_name
+      `);
+
+      return res.json({
+        success: true,
+        result: {
+          query: "Available tables",
+          tables: result.rows.map((r) => r.table_name),
+          count: result.rows.length,
+        },
+      });
+    }
+
+    if (lowerQuery.includes("schema")) {
+      // Get schema for a table
+      const tableMatch = query.match(/schema\s+(\w+)/i);
+      const tableName = tableMatch ? tableMatch[1] : "climate_master_geom";
+
+      const result = await pool.query(
+        `
+        SELECT column_name, data_type
+        FROM information_schema.columns
+        WHERE table_name = $1
+        ORDER BY ordinal_position
+      `,
+        [tableName]
+      );
+
+      return res.json({
+        success: true,
+        result: {
+          query: `Schema for ${tableName}`,
+          columns: result.rows,
+          count: result.rows.length,
+        },
+      });
+    }
+
+    if (lowerQuery.includes("stats")) {
+      // Database statistics
+      const result = await pool.query(`
+        SELECT 
+          schemaname,
+          tablename,
+          pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size,
+          n_live_tup as live_rows
+        FROM pg_stat_user_tables
+        WHERE schemaname = 'public'
+        ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+        LIMIT 10
+      `);
+
+      return res.json({
+        success: true,
+        result: {
+          query: "Database statistics",
+          stats: result.rows,
+        },
+      });
+    }
+
+    // Default: try to execute as SQL (with safety limits)
+    if (lowerQuery.includes("select")) {
+      const result = await pool.query(query + " LIMIT 10");
+
+      return res.json({
+        success: true,
+        result: {
+          query: "Query result",
+          data: result.rows,
+          count: result.rowCount,
+        },
+      });
+    }
+
+    // No recognized pattern
+    res.json({
+      success: false,
+      error: "Unknown query type. Try: 'Čeladná teplota', 'tables', 'schema climate_master_geom', 'stats'",
+    });
+  } catch (error) {
+    console.error("[MCP API] Error:", error);
+    res.json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// ============================================================
 //     START SERVERU
 // ============================================================
 app.listen(4000, () =>
