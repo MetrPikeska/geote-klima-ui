@@ -9,7 +9,10 @@ const { pool } = require("./db");
 
 const app = express();
 app.use(cors());
-app.use(bodyParser.json({ limit: "10mb" }));
+
+// Increase JSON parsing limits for large geometries
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb" }));
 
 // Debug logging middleware
 app.use((req, res, next) => {
@@ -27,6 +30,19 @@ app.use((req, res, next) => {
     }
   }
   next();
+});
+
+// JSON parse error handler
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && 'body' in err) {
+    console.error('[ERROR] JSON Parse Error:', err.message);
+    console.error('[ERROR] Raw body (first 500 chars):', req.body?.slice?.(0, 500));
+    return res.status(400).json({
+      error: 'Invalid JSON',
+      message: err.message
+    });
+  }
+  next(err);
 });
 
 // ============================================================
