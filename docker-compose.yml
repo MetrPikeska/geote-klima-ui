@@ -12,8 +12,8 @@ services:
     ports:
       - "4000:4000"
     environment:
-      # Database connection (PostgreSQL on host)
-      DB_HOST: host.docker.internal  # Special hostname to reach host machine
+      # Database connection (PostgreSQL via Tailscale)
+      DB_HOST: 100.95.250.20         # Tailscale IP
       DB_PORT: 5432
       DB_USER: postgres
       DB_PASSWORD: ${DB_PASSWORD}    # Set via .env file or -e flag
@@ -34,7 +34,7 @@ services:
     ports:
       - "9000:9000"
     environment:
-      DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@host.docker.internal:5432/klima
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@100.95.250.20:5432/klima
     restart: unless-stopped
     networks:
       - geote-network
