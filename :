@@ -1,0 +1,31 @@
+                                             Table "public.climate_results_cache"
+       Column        |            Type             | Collation | Nullable |                      Default                      
+---------------------+-----------------------------+-----------+----------+---------------------------------------------------
+ id                  | integer                     |           | not null | nextval('climate_results_cache_id_seq'::regclass)
+ unit_type           | character varying(50)       |           | not null | 
+ unit_id             | character varying(100)      |           |          | 
+ geometry_hash       | character varying(64)       |           | not null | 
+ old_normal_t        | numeric                     |           |          | 
+ old_normal_r        | numeric                     |           |          | 
+ old_normal_ai       | numeric                     |           |          | 
+ old_normal_pet      | numeric                     |           |          | 
+ old_normal_temps    | jsonb                       |           |          | 
+ new_normal_t        | numeric                     |           |          | 
+ new_normal_r        | numeric                     |           |          | 
+ new_normal_ai       | numeric                     |           |          | 
+ new_normal_pet      | numeric                     |           |          | 
+ new_normal_temps    | jsonb                       |           |          | 
+ future_normal_t     | numeric                     |           |          | 
+ future_normal_r     | numeric                     |           |          | 
+ future_normal_ai    | numeric                     |           |          | 
+ future_normal_pet   | numeric                     |           |          | 
+ future_normal_temps | jsonb                       |           |          | 
+ computed_at         | timestamp without time zone |           |          | now()
+ computation_time_ms | integer                     |           |          | 
+Indexes:
+    "climate_results_cache_pkey" PRIMARY KEY, btree (id)
+    "climate_results_cache_geometry_hash_key" UNIQUE CONSTRAINT, btree (geometry_hash)
+    "idx_cache_computed_at" btree (computed_at)
+    "idx_cache_geometry_hash" btree (geometry_hash)
+    "idx_cache_unit_type_id" btree (unit_type, unit_id)
+
