@@ -117,7 +117,7 @@ Ensure you have the following software installed on your system:
 
     Example `.env` contents:
     ```env
-    DB_HOST=localhost
+    DB_HOST=localhost  # or remote IP (e.g., 192.168.34.11)
     DB_PORT=5432
     DB_USER=postgres
     DB_PASSWORD=your_password_here  # ← Change this!
@@ -128,10 +128,10 @@ Ensure you have the following software installed on your system:
 
 ### 2. PostgreSQL Feature Server (`pg-featureserv`) Setup
 
-`pg-featureserv` is distributed as a standalone executable. It is included in this repository for convenience.
+`pg-featureserv` is distributed as a standalone executable. This repository includes the Windows `.exe` for convenience. For Linux/macOS, download a matching binary or run it via Docker (see below).
 
-1.  **Configuration:** The configuration file is located at `pg-featureserv/config/pg_featureserv.toml`. It's pre-configured for `HttpPort = 9000` and `DbConnection = "postgresql://postgres:master@localhost:5432/klima"`.
-    *   **Important:** If your PostgreSQL credentials or database name differ, you **must** update the `DbConnection` string in `pg-featureserv/config/pg_featureserv.toml`.
+1.  **Configuration:** The configuration file is located at `pg-featureserv/config/pg_featureserv.toml`. It's pre-configured for `HttpPort = 9000` and a local connection string.
+    *   **Important:** If your PostgreSQL credentials, host, or database name differ, you **must** update the `DbConnection` string in `pg-featureserv/config/pg_featureserv.toml`.
 
 ### 3. Running the Application
 
@@ -152,7 +152,7 @@ Ensure you have the following software installed on your system:
 
 #### On Linux/macOS (Manual Steps)
 
-For non-Windows environments, you will need to start the components manually:
+For non-Windows environments, you will need to start the components manually and provide a Linux/macOS `pg_featureserv` binary:
 
 1.  **Start Node.js Backend:**
     ```bash
@@ -162,7 +162,9 @@ For non-Windows environments, you will need to start the components manually:
     cd ..
     ```
 2.  **Start pg-featureserv:**
-    *   Ensure the `pg-featureserv` executable has execute permissions (`chmod +x pg-featureserv/pg_featureserv.exe`).
+    *   **Linux/macOS binary:** Download `pg_featureserv` for your OS from the official releases and place it as `pg-featureserv/pg_featureserv` (no `.exe`).
+    *   **Alternative (Docker):** Run `pg_featureserv` in a container and expose port `9000`.
+    *   Ensure the binary has execute permissions (`chmod +x pg-featureserv/pg_featureserv`).
     *   From the project root, run:
     ```bash
     cd pg-featureserv
@@ -217,7 +219,7 @@ The `.gitignore` file is configured to exclude development-specific files and se
     ├── assets/                 # Static assets for the pg-featureserv web interface
     ├── config/                 # Configuration files for pg_featureserv
     ├── LICENSE.md              # License details for pg_featureserv
-    ├── pg_featureserv.exe      # Executable application for the feature server
+    ├── pg_featureserv.exe      # Windows executable (Linux/macOS uses pg_featureserv binary)
     └── README.md               # Documentation for pg_featureserv
 ```
 
