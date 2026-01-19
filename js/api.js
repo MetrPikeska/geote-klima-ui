@@ -3,11 +3,15 @@
 
 window.ClimateApp = window.ClimateApp || {};
 
-ClimateApp.config = {
-  BASE_API_URL: "http://localhost:9000",   // pg-featureserv
-  TILE_URL: "http://localhost:7800/public.climate_master_geom/{z}/{x}/{y}.png",
-  BACKEND_URL: "http://localhost:4000"     // Node backend
-};
+// Default local development config
+// For production, load config.production.js in index.html BEFORE api.js
+if (!ClimateApp.config) {
+  ClimateApp.config = {
+    BASE_API_URL: "http://localhost:9000",   // pg-featureserv
+    TILE_URL: "http://localhost:7800/public.climate_master_geom/{z}/{x}/{y}.png",
+    BACKEND_URL: "http://localhost:4000"     // Node backend
+  };
+}
 
 ClimateApp.api = (function () {
 

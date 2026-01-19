@@ -8,7 +8,24 @@ const crypto = require("crypto");
 const { pool } = require("./db");
 
 const app = express();
-app.use(cors());
+
+// CORS configuration - allow requests from your hosting domain
+const corsOptions = {
+  origin: [
+    'http://localhost:5500',      // Local development (Live Server)
+    'http://localhost',            // Local development
+    'http://127.0.0.1',           // Local development
+    'https://petrmikeska.cz',     // Your production domain
+    'http://petrmikeska.cz',      // HTTP fallback
+    'https://www.petrmikeska.cz', // WWW variant
+    'http://www.petrmikeska.cz'   // WWW HTTP fallback
+  ],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 
 // Increase JSON parsing limits for large geometries
 // IMPORTANT: Use extended: true for large URL-encoded data
