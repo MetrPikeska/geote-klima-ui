@@ -1,10 +1,57 @@
-node_modules/
+# ============================================
+# GEOTE Climate UI - Git Ignore Rules
+# ============================================
 
-*.log
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment Variables (SENSITIVE - DO NOT COMMIT)
 .env
-.DS_Store
-Thumbs.db
-data.zip
+.env.local
+.env.production
+*.env
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# Operating System Files
+.DS_Store        # macOS
+Thumbs.db        # Windows
+Desktop.ini      # Windows
 nul
+
+# Database Files (large/sensitive)
+data.zip
 database_ready/
 databaze_ready/
+*.db
+*.sqlite
+
+# Process IDs (created by start.sh)
+*.pid
+
+# Backups
+*.bak
+*.backup
+README.md.bak
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+
+# Compiled / Distribution
+dist/
+build/

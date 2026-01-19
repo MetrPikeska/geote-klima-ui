@@ -1,293 +1,591 @@
-# GEOTE Climate UI – Semester Project
+# GEOTE Climate UI
 
 ![GitHub last commit](https://img.shields.io/github/last-commit/MetrPikeska/geote-klima-ui)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-## ⚠️ Current Updates
-
-**MCP Server Status (December 2024):**
-The Model Context Protocol (MCP) server for PostgreSQL database access is currently **not functional** due to the following issues:
-- The `@modelcontextprotocol/server-postgres` package (v0.6.2) is **deprecated** and no longer maintained
-- Package contains bugs causing `TypeError: Invalid URL` during initialization
-- NPM recommends contacting support, indicating the package is abandoned
-
-**Alternative Solutions:**
-- Direct database queries via Node.js scripts work reliably
-- Backend API (`/climate/polygon` endpoint) remains fully functional
-- For database exploration, use helper scripts in `backend/` directory or standard PostgreSQL tools
-
-**Future Plans:**
-We are monitoring the MCP ecosystem for updates. A working configuration is preserved in the `feature/mcp-server` branch for future use when the package is fixed or replaced.
+> A professional web-based GIS application for analyzing and visualizing climate indicators across the Czech Republic using PostGIS spatial analysis and interactive mapping.
 
 ---
 
-## Project Overview
+## 📋 Project Overview
 
-This project was developed as part of a semester project for the GEOTE course at the Department of Geoinformatics, during the Winter Semester 2025. The climate data utilized in this application was provided by the university.
+**GEOTE Climate UI** is a full-stack geospatial web application designed for analyzing climate data across administrative units and custom geographic regions. Built as part of a university geoinformatics project, it demonstrates advanced GIS development skills including PostGIS spatial queries, OGC API Features integration, and interactive web mapping.
 
-**GEOTE Climate UI** is a web application designed for analyzing and visualizing climate indicators. It allows users to study climate data for pre-defined administrative units (ORP - Municipalities with Extended Powers, CHKO - Protected Landscape Areas) or custom-drawn geographic polygons within the Czech Republic. The application leverages PostGIS for robust spatial analysis and provides insights into historical and projected climate normals.
+This application enables users to:
+- Analyze climate indicators for predefined administrative units (ORP, CHKO) or custom-drawn polygons
+- Calculate and visualize climate indices (De Martonne Aridity Index, Potential Evapotranspiration)
+- Compare historical climate normals with future projections
+- Interact with dynamic maps and charts for data exploration
 
-## Key Features
+**Target Users:** GIS professionals, climate researchers, environmental planners, and students studying geoinformatics.
 
--   **Flexible Spatial Unit Selection:** Choose between predefined administrative units (ORP, CHKO) or define custom areas using interactive drawing tools on the map.
--   **Interactive Map Interface:** Powered by Leaflet.js, offering a dynamic map experience with integrated polygon drawing capabilities via Leaflet.draw.
--   **Comprehensive Climate Normals:** Perform calculations across various reference climate periods:
-    -   **Old Normal:** Based on historical data up to 1990.
-    -   **New Normal:** Utilizes data from the period 1991–2020.
-    -   **Prediction 2050:** Forecasted data from 2041 onwards.
--   **Diverse Climate Indicators:** Supports the calculation and visualization of:
-    -   De Martonne Aridity Index.
-    -   Potential Evapotranspiration (Thornthwaite).
--   **Intuitive Results Visualization:** Presents analysis outcomes in clear, organized tables (left sidebar) and dynamic, interactive line graphs (right sidebar) powered by Chart.js.
--   **Optimized Data Processing:** De Martonne and PET indices are efficiently loaded directly from the PostgreSQL database when pre-calculated, falling back to client-side computation otherwise.
+---
 
-## Technologies Used
+## ✨ Key Features
 
-### Frontend
--   HTML5, CSS3, JavaScript (Vanilla JS modules for API, charts, compute, map, UI logic)
--   [Leaflet.js](https://leafletjs.com/) for interactive mapping.
--   [Leaflet.draw](https://leaflet.github.io/Leaflet.draw/) for custom polygon creation.
--   [Chart.js](https://www.chartjs.org/) for data visualization.
+### 🗺️ **Advanced Spatial Analysis**
+- **Flexible Area Selection:** Choose from predefined administrative boundaries (ORP - Municipalities with Extended Powers, CHKO - Protected Landscape Areas) or draw custom polygons
+- **PostGIS Integration:** Server-side spatial queries for efficient processing of large climate datasets
+- **Projection Support:** Native EPSG:5514 (S-JTSK / Krovak East North) coordinate system
 
-### Backend
--   [Node.js](https://nodejs.org/) with [Express.js](https://expressjs.com/) for handling climate calculations.
--   `cors` for Cross-Origin Resource Sharing.
--   `body-parser` for parsing incoming request bodies.
+### 📊 **Climate Indicators**
+- **De Martonne Aridity Index:** Assess moisture availability and drought risk
+- **Potential Evapotranspiration (Thornthwaite):** Calculate water demand for vegetation
+- **Multiple Climate Normals:**
+  - Old Normal (pre-1990 baseline)
+  - New Normal (1991-2020)
+  - Prediction 2050 (2041+ projections)
 
-### Database & Geospatial Services
--   [PostgreSQL](https://www.postgresql.org/) with [PostGIS](https://postgis.net/) extension for advanced spatial data management and queries.
--   [pg-featureserv](https://github.com/CrunchyData/pg_featureserv) as an OGC API Features server for serving spatial data collections.
+### 🎨 **Interactive Visualization**
+- **Leaflet.js Map Interface:** Pan, zoom, and draw custom analysis areas
+- **Dynamic Charts:** Interactive line graphs powered by Chart.js
+- **Real-time Results:** Instant tabular and graphical feedback
 
-## Database Architecture
+### ⚡ **Performance Optimization**
+- Database caching for repeated queries
+- Batch processing support for multiple geometries
+- Pre-calculated indices stored in PostgreSQL
 
-The project's data infrastructure is built upon a robust PostgreSQL database, heavily leveraging the PostGIS extension for advanced geospatial capabilities. The architecture is designed to efficiently store, process, and serve complex climate and cadastral data.
+---
 
-## Data Import Workflow
+## 🛠️ Technology Stack
 
-Raw climate data, typically in CSV format, is initially imported into dedicated intermediate tables within PostgreSQL. This process is managed by a custom Python script (e.g., `import.py`), which handles the initial ingestion of raw data.
+### **Frontend**
+- Vanilla JavaScript (ES6 modules)
+- [Leaflet.js](https://leafletjs.com/) - Interactive mapping
+- [Leaflet.draw](https://leaflet.github.io/Leaflet.draw/) - Polygon drawing tools
+- [Chart.js](https://www.chartjs.org/) - Data visualization
+- HTML5 / CSS3
 
-## Master Table Creation (SQL-based)
+### **Backend**
+- [Node.js](https://nodejs.org/) with [Express.js](https://expressjs.com/)
+- PostgreSQL connection pooling
+- CORS and body-parser middleware
+- Environment-based configuration
 
-The core of the project's spatial data is the `climate_master_geom` table. This central master table is created using SQL JOIN operations, integrating the imported intermediate climate data with a cadastral layer (`ku_cr`). The `climate_master_geom` table stores:
--   **Geometry:** MultiPolygon spatial data, specifically in EPSG:5514 (S-JTSK / Krovak East North) coordinate reference system.
--   **Climate Variables:** Monthly and annual climate variables.
--   **Computed Indices:** Pre-calculated climate indicators such as the De Martonne aridity index and Potential Evapotranspiration (Thornthwaite).
+### **Database & Geospatial Services**
+- [PostgreSQL](https://www.postgresql.org/) 12+ with [PostGIS](https://postgis.net/) extension
+- [pg_featureserv](https://github.com/CrunchyData/pg_featureserv) - OGC API Features server
+- Spatial data in EPSG:5514 coordinate system
 
-## Derived Spatial Layers (ORP, CHKO)
+---
 
-Aggregated spatial layers for administrative units like ORP (Municipalities with Extended Powers) and CHKO (Protected Landscape Areas) are derived from the `climate_master_geom` master table. This derivation is performed using SQL spatial aggregation techniques, enabling efficient querying and visualization of climate indicators at these higher administrative levels.
-
-## Database Requirements
-
--   **PostgreSQL:** Version 12+ is required.
--   **PostGIS Extension:** The PostGIS extension is **MANDATORY** and must be installed and enabled in the project's database. This provides the necessary spatial functions and data types for the application's core functionality.
--   **Database Name:** A PostgreSQL database named `klima` must exist. If a different name is used, update the `DB_NAME` in `backend/.env` and `pg-featureserv/config/pg_featureserv.toml`.
--   **Database User:** Ensure a PostgreSQL user has appropriate access privileges to the `klima` database. Configure credentials in `backend/.env` file (see [SECURITY_IMPROVEMENTS.md](SECURITY_IMPROVEMENTS.md) for details).
-
-## Getting Started
-
-Follow these steps to set up and run the project on your local machine.
+## 🚀 Quick Start (Linux / Ubuntu)
 
 ### Prerequisites
 
-Ensure you have the following software installed on your system:
+- **Ubuntu 22.04+** (or similar Debian-based system)
+- **Node.js 16+** with npm
+- **PostgreSQL 12+** with PostGIS extension
+- **Git** for cloning the repository
 
--   **Node.js** (LTS version recommended) with `npm` (Node Package Manager).
+### Installation
 
-### 1. Backend Server Setup
+```bash
+# 1. Clone the repository
+git clone https://github.com/MetrPikeska/geote-klima-ui.git
+cd geote-klima-ui
 
-1.  Navigate to the `backend` directory:
-    ```bash
-    cd backend
-    ```
-2.  Install Node.js dependencies:
-    ```bash
-    npm install
-    ```
-3.  **Configure environment variables** (MANDATORY):
-    ```bash
-    # Copy the example environment file
-    cp .env.example .env
+# 2. Install backend dependencies
+cd backend && npm install && cd ..
 
-    # Edit .env and set your PostgreSQL password
-    # The file already contains sensible defaults
-    ```
-    The `.env` file contains database credentials and is excluded from git for security.
-    **Never commit `.env` to version control!**
+# 3. Configure environment variables
+cd backend && cp .env.example .env && cd ..
+nano backend/.env  # Edit with your PostgreSQL credentials
 
-    Example `.env` contents:
-    ```env
-    DB_HOST=localhost  # or remote IP (e.g., 192.168.34.11)
-    DB_PORT=5432
-    DB_USER=postgres
-    DB_PASSWORD=your_password_here  # ← Change this!
-    DB_NAME=klima
-    PORT=4000
-    NODE_ENV=development
-    ```
+# 4. Download pg_featureserv (Linux binary)
+cd pg-featureserv && \
+  wget https://github.com/CrunchyData/pg_featureserv/releases/download/v1.3.1/pg_featureserv_1.3.1_linux_amd64.tar.gz && \
+  tar -xzf pg_featureserv_1.3.1_linux_amd64.tar.gz && \
+  chmod +x pg_featureserv && \
+  rm pg_featureserv_1.3.1_linux_amd64.tar.gz && \
+  cd ..
 
-### 2. PostgreSQL Feature Server (`pg-featureserv`) Setup
+# 5. Configure pg_featureserv database connection
+nano pg-featureserv/config/pg_featureserv.toml
+# Update DbConnection with your PostgreSQL credentials
 
-`pg-featureserv` is distributed as a standalone executable. This repository includes the Windows `.exe` for convenience. For Linux/macOS, download a matching binary or run it via Docker (see below).
+# 6. Start all services
+./start.sh
 
-1.  **Configuration:** The configuration file is located at `pg-featureserv/config/pg_featureserv.toml`. It's pre-configured for `HttpPort = 9000` and a local connection string.
-    *   **Important:** If your PostgreSQL credentials, host, or database name differ, you **must** update the `DbConnection` string in `pg-featureserv/config/pg_featureserv.toml`.
-
-### 3. Running the Application
-
-#### On Windows (Recommended for quick start)
-
-1.  **Start:** From the project root, simply run:
-    ```bash
-    .\start.bat
-    ```
-    This script will:
-    *   Start the Node.js backend server (minimized).
-    *   Change directory into `pg-featureserv` and start `pg_featureserv.exe serve` (minimized).
-    *   Open `index.html` in your default web browser.
-2.  **Stop:** To shut down both servers, run:
-    ```bash
-    .\stop.bat
-    ```
-
-#### On Linux/macOS (Manual Steps)
-
-For non-Windows environments, you will need to start the components manually and provide a Linux/macOS `pg_featureserv` binary:
-
-1.  **Start Node.js Backend:**
-    ```bash
-    cd backend
-    node server.js
-    # Keep this terminal open or run in background (e.g., using `nohup node server.js &`)
-    cd ..
-    ```
-2.  **Start pg-featureserv:**
-    *   **Linux/macOS binary:** Download `pg_featureserv` for your OS from the official releases and place it as `pg-featureserv/pg_featureserv` (no `.exe`).
-    *   **Alternative (Docker):** Run `pg_featureserv` in a container and expose port `9000`.
-    *   Ensure the binary has execute permissions (`chmod +x pg-featureserv/pg_featureserv`).
-    *   From the project root, run:
-    ```bash
-    cd pg-featureserv
-    ./pg_featureserv serve
-    # Keep this terminal open or run in background
-    cd ..
-    ```
-3.  **Open Frontend:** Open `index.html` in your web browser.
-    ```bash
-    # Example for Linux, might vary
-    xdg-open index.html
-    # Example for macOS
-    open index.html
-    ```
-
-### Git Ignoring
-
-The `.gitignore` file is configured to exclude development-specific files and sensitive information, ensuring a clean and manageable repository.
-
-## Usage
-
-1.  **Select Spatial Unit:** Choose between "ORP", "CHKO", or "Custom Polygon". For predefined units, select from the dropdown. For custom polygons, use the drawing tools on the map.
-2.  **Select Climate Normal and Indicator:** Choose your desired "Reference Normal" (Old, New, Prediction 2050) and "Climate Indicator" (De Martonne Aridity Index, Potential Evapotranspiration).
-3.  **Calculate:** Click the "Calculate" button to process the data.
-4.  **View Results:** Results are displayed in a table in the left panel, a summary box in the top-right, and an interactive line graph in the bottom-right panel.
-
-## Project Structure
-
-```
-.
-├── .gitignore                  # Specifies intentionally untracked files to ignore
-├── index.html                  # Main HTML file for the frontend user interface
-├── info.txt                    # Supplementary information file
-├── opalena.geojson             # Sample GeoJSON data file
-├── README.md                   # Project documentation and setup guide
-├── start.bat                   # Windows batch script to start the application components
-├── stop.bat                    # Windows batch script to stop the application components
-├── backend/                    # Node.js Express backend server for climate calculations
-│   ├── db.js                   # Database connection configuration for Node.js
-│   ├── package-lock.json       # Records the exact dependency tree
-│   ├── package.json            # Defines project metadata and dependencies
-│   └── server.js               # Main Express server application
-├── css/                        # Contains Cascading Style Sheets for the application
-│   └── style.css               # Core styles for the user interface
-├── js/                         # JavaScript modules for frontend logic
-│   ├── api.js                  # Handles communication with OGC API Features and Node backend
-│   ├── charts.js               # Manages chart rendering and data visualization with Chart.js
-│   ├── compute.js              # Contains climate indicator computation logic
-│   ├── map.js                  # Initializes and manages map interactions using Leaflet
-│   └── ui.js                   # Manages user interface elements and event handling
-└── pg-featureserv/             # PostgreSQL Feature Server (Crunchy Data pg_featureserv)
-    ├── assets/                 # Static assets for the pg-featureserv web interface
-    ├── config/                 # Configuration files for pg_featureserv
-    ├── LICENSE.md              # License details for pg_featureserv
-    ├── pg_featureserv.exe      # Windows executable (Linux/macOS uses pg_featureserv binary)
-    └── README.md               # Documentation for pg_featureserv
+# 7. Open frontend in browser
+xdg-open index.html
 ```
 
-## 🔒 Security
+### Verify Installation
 
-This project implements secure credential management and error handling. See [SECURITY_IMPROVEMENTS.md](SECURITY_IMPROVEMENTS.md) for detailed documentation.
+After running `./start.sh`, you should see:
+```
+✓ Backend started (PID: xxxxx)
+✓ pg_featureserv started (PID: xxxxx)
+```
 
-**Key security features:**
-- ✅ Environment variables for database credentials (`.env` file)
-- ✅ Input validation for geometry data
-- ✅ Comprehensive error handling (backend + frontend)
-- ✅ Database connection monitoring
-- ✅ User-friendly error messages
+Access points:
+- **Frontend:** Open `index.html` in your browser
+- **Backend API:** http://localhost:4000
+- **pg_featureserv:** http://localhost:9000
 
-**Important:** Never commit the `backend/.env` file to version control. Use `backend/.env.example` as a template.
+---
 
-## License
+## ⚙️ Configuration
 
-This project is licensed under the MIT License - see the [LICENSE.md](#) file for details. (Note: A `LICENSE.md` file needs to be created in the root directory if not already present.)
+### Environment Variables (`backend/.env`)
 
-## Contributing
+```env
+# Database Configuration
+DB_HOST=localhost          # PostgreSQL host (use IP for remote servers)
+DB_PORT=5432              # PostgreSQL port
+DB_USER=postgres          # Database user
+DB_PASSWORD=your_password  # ⚠️ CHANGE THIS!
+DB_NAME=klima             # Database name
 
-Contributions are welcome! Please feel free to open issues or submit pull requests. For major changes, please open an issue first to discuss what you would like to change.
+# Server Configuration
+PORT=4000                 # Backend API port
+NODE_ENV=development      # development | production
+```
 
-# Dokumentace zdrojových dat (Source Data Documentation)
+**Important:** 
+- Never commit `.env` to version control
+- Use `.env.example` as a template
+- Ensure PostgreSQL user has SELECT permissions on spatial tables
 
-Tento dokument popisuje strukturu, původ, význam a způsob využití zdrojových dat ve formátu CSV, která slouží jako vstup pro projekt GEOTE Klima. Data jsou následně importována do databáze PostgreSQL/PostGIS a využita pro výpočty klimatických ukazatelů a vizualizaci ve webové aplikaci.
+### pg_featureserv Configuration (`pg-featureserv/config/pg_featureserv.toml`)
 
-## Zdrojová data (Source data)
+```toml
+[Database]
+DbConnection = "postgresql://postgres:your_password@localhost:5432/klima"
 
-### 1. Přehled dat
+[Server]
+HttpPort = 9000
+HttpHost = "0.0.0.0"
 
-Projekt GEOTE Klima pracuje s daty ve formátu CSV, která představují klíčové klimatické proměnné v měsíčním časovém kroku. Tato data jsou základním vstupem pro výpočty různých klimatických ukazatelů a analýzy. Jsou prostorově navázána na územní jednotky České republiky, což umožňuje detailní geografickou analýzu.
+[Paging]
+LimitDefault = 10000
+LimitMax = 10000
+```
 
-### 2. Regionální data (data/regiony/)
+**For Remote PostgreSQL:**
+- Update `DB_HOST` in `backend/.env` to server IP
+- Update `DbConnection` in `pg_featureserv.toml` with server IP
+- Ensure PostgreSQL allows remote connections (`postgresql.conf`, `pg_hba.conf`)
 
-Tato část repozitáře obsahuje referenční územní jednotky České republiky, které slouží pro prostorové napojení klimatických hodnot, agregaci výsledků a analýzu na různých územních úrovních:
+---
 
-*   **ku** – Katastrální území: Základní územní jednotka, na kterou jsou primárně navázány klimatické hodnoty.
-*   **orp** – Obce s rozšířenou působností: Vyšší územní celek pro agregaci a analýzu dat.
-*   **chko** – Chráněné krajinné oblasti: Specifické územní jednotky pro environmentální analýzy.
+## 🐧 Linux Deployment
 
-### 3. Klimatické proměnné
+### Background Services (Development)
 
-Následující složky obsahují CSV soubory s klimatickými daty pro konkrétní proměnné:
+The provided scripts use `nohup` to run services in the background:
 
-*   **TAVG**: Průměrná měsíční teplota vzduchu (°C).
-*   **SRA**: Měsíční úhrn atmosférických srážek (mm).
-*   **RH**: Průměrná měsíční relativní vlhkost vzduchu (%).
-*   **WV**: Průměrná měsíční rychlost větru (m·s⁻¹).
+```bash
+# Start services
+./start.sh
 
-Data jsou strukturována po měsících, přičemž jeden řádek v CSV souboru odpovídá jedné prostorové jednotce (katastrální území) a roku. Měsíční hodnoty jsou následně agregovány na roční úroveň pro další analýzy.
+# View logs in real-time
+tail -f logs/backend.log
+tail -f logs/pg-featureserv.log
 
-### 4. Vazba na databázi
+# Stop services
+./stop.sh
+```
 
-Import CSV souborů do databáze PostgreSQL/PostGIS probíhá pomocí Python skriptů. Tyto skripty zajišťují transformaci a kontrolu dat, včetně jejich napojení na prostorovou geometrii územních jednotek. Výsledkem je uložení dat do centrální tabulky `climate_master_geom`, která obsahuje jak atributová data, tak i prostorové informace.
+### Production Deployment with systemd
 
-Je důležité zdůraznit, že samotné CSV soubory neobsahují geometrii, ale pouze atributová data. Prostorové napojení probíhá až během importu do databáze, kde jsou data propojena s existujícími geometrickými vrstvami.
+For production servers, use systemd service files:
 
-### 5. Využití dat
+#### Backend Service (`/etc/systemd/system/geote-backend.service`)
 
-Importovaná a zpracovaná data slouží k celé řadě analýz a výpočtů v rámci projektu, včetně:
+```ini
+[Unit]
+Description=GEOTE Climate UI Backend
+After=network.target postgresql.service
 
-*   Výpočtu ariditního indexu de Martonne.
-*   Výpočtu potenciální evapotranspirace (metoda Thornthwaite).
-*   Analýze klimatických změn mezi různými normály.
-*   Prezentaci výsledků a vizualizaci v interaktivní webové aplikaci.
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/geote-klima-ui/backend
+Environment="NODE_ENV=production"
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=10
 
-### 6. Poznámka k repozitáři
+[Install]
+WantedBy=multi-user.target
+```
 
-Data obsažená v tomto repozitáři jsou určena primárně pro studijní a výzkumné účely v rámci semestrální práce. Nejsou určena k operativnímu meteorologickému využití. Struktura dat a adresářů je navržena tak, aby umožňovala snadné rozšíření o další klimatické proměnné nebo časové řady (roky) v budoucnu.
+#### pg_featureserv Service (`/etc/systemd/system/pg-featureserv.service`)
+
+```ini
+[Unit]
+Description=pg_featureserv OGC API Features Server
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/geote-klima-ui/pg-featureserv
+ExecStart=/var/www/geote-klima-ui/pg-featureserv/pg_featureserv serve
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+#### Enable and Start Services
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable geote-backend pg-featureserv
+sudo systemctl start geote-backend pg-featureserv
+sudo systemctl status geote-backend pg-featureserv
+```
+
+### Nginx Reverse Proxy (Optional)
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    # Frontend
+    location / {
+        root /var/www/geote-klima-ui;
+        index index.html;
+    }
+
+    # Backend API
+    location /api/ {
+        proxy_pass http://localhost:4000/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # pg_featureserv
+    location /features/ {
+        proxy_pass http://localhost:9000/;
+        proxy_set_header Host $host;
+    }
+}
+```
+
+---
+
+## 🪟 Windows Setup (Legacy Support)
+
+### Prerequisites
+- Node.js 16+
+- PostgreSQL 12+ with PostGIS
+
+### Quick Start
+
+```batch
+REM 1. Install dependencies
+cd backend
+npm install
+cd ..
+
+REM 2. Configure .env file
+cd backend
+copy .env.example .env
+notepad .env
+cd ..
+
+REM 3. Start services
+start.bat
+
+REM 4. Stop services
+stop.bat
+```
+
+**Note:** Windows setup uses pre-compiled `pg_featureserv.exe` included in the repository.
+
+---
+
+## 🗄️ Database Architecture
+
+### Master Table: `climate_master_geom`
+
+The core spatial table containing:
+- **Geometry:** MultiPolygon in EPSG:5514
+- **Climate Variables:** Monthly temperature, precipitation, humidity, wind speed
+- **Pre-calculated Indices:** De Martonne, PET (Thornthwaite)
+- **Temporal Coverage:** Historical data (pre-1990), new normals (1991-2020), predictions (2041+)
+
+### Derived Tables
+- **orp:** Municipalities with Extended Powers (aggregated from climate_master_geom)
+- **chko:** Protected Landscape Areas (aggregated)
+
+### Database Requirements
+
+1. **PostgreSQL 12+ with PostGIS:**
+   ```sql
+   CREATE EXTENSION IF NOT EXISTS postgis;
+   ```
+
+2. **Database Name:** `klima` (or update `.env` / `pg_featureserv.toml`)
+
+3. **User Permissions:**
+   ```sql
+   GRANT SELECT ON climate_master_geom TO your_user;
+   GRANT SELECT ON orp TO your_user;
+   GRANT SELECT ON chko TO your_user;
+   ```
+
+---
+
+## 📖 Usage Guide
+
+### 1. Select Analysis Area
+
+**Option A: Predefined Units**
+- Select "ORP" or "CHKO" from the dropdown
+- Choose a specific administrative unit
+
+**Option B: Custom Polygon**
+- Click the polygon drawing tool (⬟) on the map
+- Draw your area of interest by clicking points
+- Complete the polygon by clicking the first point again
+
+### 2. Configure Analysis
+
+- **Reference Normal:** Choose climate period (Old Normal / New Normal / Prediction 2050)
+- **Climate Indicator:** Select De Martonne or PET
+
+### 3. Calculate & Visualize
+
+Click **"Calculate"** to:
+- Perform server-side spatial query
+- Display results in table (left panel)
+- Show interactive chart (right panel)
+- View summary statistics (top-right box)
+
+---
+
+## 📁 Project Structure
+
+```
+geote-klima-ui/
+├── index.html                  # Main application entry point
+├── start.sh                    # Linux start script
+├── stop.sh                     # Linux stop script
+├── start.bat                   # Windows start script
+├── stop.bat                    # Windows stop script
+├── README.md                   # This file
+├── SECURITY_IMPROVEMENTS.md    # Security documentation
+├── CACHING_IMPLEMENTATION.md   # Caching strategy docs
+├── backend/
+│   ├── server.js              # Express API server
+│   ├── db.js                  # PostgreSQL connection pool
+│   ├── package.json           # Node dependencies
+│   ├── .env.example           # Environment template
+│   └── .env                   # Local config (gitignored)
+├── css/
+│   └── style.css              # Application styles
+├── js/
+│   ├── api.js                 # API communication layer
+│   ├── compute.js             # Climate calculations
+│   ├── charts.js              # Chart.js integration
+│   ├── map.js                 # Leaflet map setup
+│   └── ui.js                  # UI event handlers
+├── pg-featureserv/
+│   ├── pg_featureserv         # Linux binary (download separately)
+│   ├── pg_featureserv.exe     # Windows binary (included)
+│   └── config/
+│       └── pg_featureserv.toml # Server configuration
+├── logs/                       # Runtime logs (created by start.sh)
+│   ├── backend.log
+│   └── pg-featureserv.log
+└── databaze_ready/             # Shapefiles for import
+    ├── climate_master_geom.*
+    ├── chko.*
+    └── orp.*
+```
+
+---
+
+## 🔒 Security Best Practices
+
+### ✅ Implemented Security Features
+
+- **Environment Variables:** All credentials stored in `.env` (gitignored)
+- **Input Validation:** Geometry data validated before processing
+- **Error Handling:** Comprehensive error messages without exposing internals
+- **Connection Pooling:** Prevents resource exhaustion
+- **CORS Configuration:** Controlled cross-origin access
+
+### 🛡️ Security Checklist
+
+- [ ] `.env` file excluded from git (verify with `git status`)
+- [ ] PostgreSQL password changed from default
+- [ ] Remote PostgreSQL uses SSL/TLS (production)
+- [ ] Firewall rules restrict database access (production)
+- [ ] Regular security updates for Node.js and PostgreSQL
+
+See [SECURITY_IMPROVEMENTS.md](SECURITY_IMPROVEMENTS.md) for detailed documentation.
+
+---
+
+## 🐛 Troubleshooting
+
+### Database Connection Fails
+
+```bash
+# Test PostgreSQL connectivity
+psql -h localhost -U postgres -d klima -c "SELECT PostGIS_Version();"
+
+# Check backend logs
+tail -f logs/backend.log
+
+# Verify .env configuration
+cat backend/.env
+```
+
+**Common Issues:**
+- Incorrect password in `.env`
+- PostgreSQL not running: `sudo systemctl status postgresql`
+- PostGIS not installed: `CREATE EXTENSION postgis;`
+
+### pg_featureserv Won't Start
+
+```bash
+# Check binary permissions
+ls -l pg-featureserv/pg_featureserv
+
+# Make executable if needed
+chmod +x pg-featureserv/pg_featureserv
+
+# Test manually
+cd pg-featureserv
+./pg_featureserv serve
+
+# Check configuration
+cat config/pg_featureserv.toml
+```
+
+### Frontend Shows "Network Error"
+
+1. Verify backend is running: `curl http://localhost:4000`
+2. Check pg_featureserv: `curl http://localhost:9000`
+3. Review browser console for CORS errors
+4. Ensure ports 4000 and 9000 are not blocked
+
+---
+
+## 🎓 Academic & Portfolio Context
+
+This project was developed for the GEOTE course (Department of Geoinformatics, Winter Semester 2025) and demonstrates:
+
+### **GIS Development Skills**
+- PostGIS spatial analysis and SQL optimization
+- OGC API Features implementation
+- Coordinate system transformations (EPSG:5514)
+- Spatial indexing and query performance tuning
+
+### **Full-Stack Development**
+- RESTful API design with Express.js
+- Asynchronous JavaScript (Promises, async/await)
+- Client-server architecture
+- Environment-based configuration management
+
+### **Geospatial Web Development**
+- Leaflet.js integration and customization
+- Dynamic data visualization with Chart.js
+- Interactive drawing tools (Leaflet.draw)
+- Responsive UI design
+
+### **DevOps & Deployment**
+- Linux server configuration
+- Process management (systemd, nohup)
+- Environment variable security
+- Reverse proxy setup (Nginx)
+
+---
+
+## 📜 License
+
+This project is licensed under the **MIT License**.
+
+```
+MIT License
+
+Copyright (c) 2025 Petr Mikeška
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+```
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! To contribute:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+**Areas for Contribution:**
+- Additional climate indicators
+- Performance optimizations
+- Enhanced visualizations
+- Docker containerization
+- Internationalization (i18n)
+
+---
+
+## 🙏 Acknowledgments
+
+- **Climate Data:** Provided by the Department of Geoinformatics
+- **PostgreSQL/PostGIS:** Open-source spatial database foundation
+- **pg_featureserv:** Crunchy Data's excellent OGC API implementation
+- **Leaflet.js Community:** Extensive mapping ecosystem
+- **Chart.js Developers:** Beautiful, accessible charts
+
+---
+
+## 📧 Contact
+
+**Petr Mikeška**  
+GitHub: [@MetrPikeska](https://github.com/MetrPikeska)
+
+For questions, suggestions, or collaboration opportunities, please open an issue on GitHub.
+
+---
+
+## 🗺️ Roadmap
+
+### Planned Features
+- [ ] Docker containerization for easier deployment
+- [ ] Additional climate indices (Palmer Drought Index, SPEI)
+- [ ] Time-series animation for climate change visualization
+- [ ] Export results to GeoJSON/CSV
+- [ ] User authentication for saved analyses
+- [ ] Mobile-responsive interface improvements
+
+### Future Enhancements
+- Integration with real-time weather APIs
+- Machine learning predictions for climate trends
+- Multi-language support (Czech/English)
+- Accessibility (WCAG 2.1 compliance)
+
+---
+
+**Last Updated:** January 2026  
+**Version:** 1.0.0
