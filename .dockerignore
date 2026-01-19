@@ -1,0 +1,16 @@
+.dockerignore
+node_modules
+npm-debug.log
+logs
+.env
+.env.save
+*.pid
+.git
+.gitignore
+README.md
+backend/.env
+backend/.env.example
+start.sh
+stop.sh
+pg-featureserv/pg_featureserv
+databaze_ready/

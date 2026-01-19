@@ -1,0 +1,81 @@
+# ============================================
+# docker-compose.yml - Orchestrate all services
+# ============================================
+
+version: '3.8'
+
+services:
+  # Node.js Backend
+  backend:
+    build: .
+    container_name: geote-backend
+    ports:
+      - "4000:4000"
+    environment:
+      # Database connection (PostgreSQL on host)
+      DB_HOST: host.docker.internal  # Special hostname to reach host machine
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD}    # Set via .env file or -e flag
+      DB_NAME: klima
+      PORT: 4000
+      NODE_ENV: production
+    restart: unless-stopped
+    networks:
+      - geote-network
+    # Only needed if you want logs persisted
+    volumes:
+      - ./logs:/app/logs
+
+  # pg_featureserv
+  featureserv:
+    image: golang:1.19-alpine  # We'll override CMD to run pg_featureserv
+    container_name: geote-featureserv
+    ports:
+      - "9000:9000"
+    environment:
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@host.docker.internal:5432/klima
+    restart: unless-stopped
+    networks:
+      - geote-network
+    working_dir: /app
+    volumes:
+      - ./pg-featureserv:/app
+    # Download and run pg_featureserv
+    command: |
+      sh -c "
+        if [ ! -f pg_featureserv ]; then
+          apk add --no-cache curl tar
+          curl -L https://github.com/CrunchyData/pg_featureserv/releases/download/v1.3.1/pg_featureserv_1.3.1_linux_amd64.tar.gz -o pg_featureserv.tar.gz
+          tar -xzf pg_featureserv.tar.gz
+          chmod +x pg_featureserv
+          rm pg_featureserv.tar.gz
+        fi
+        ./pg_featureserv serve
+      "
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: geote-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./frontend:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+      - featureserv
+    restart: unless-stopped
+    networks:
+      - geote-network
+
+networks:
+  geote-network:
+    driver: bridge
+
+# Usage:
+# 1. Create .env file with: DB_PASSWORD=master
+# 2. Run: docker-compose up -d
+# 3. View logs: docker-compose logs -f backend
+# 4. Stop: docker-compose down
