@@ -2,158 +2,185 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>GEOTE Climate UI – Semester Project</title>
+  <title>GEOTE Climate</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
-  <!-- Leaflet.draw CSS -->
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"
-  />
-
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
   <link rel="stylesheet" href="./css/style.css">
 
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- Leaflet.draw JS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-
 </head>
 <body>
-  <div id="app">
+<div id="app">
 
-    <aside id="sidebar">
-      <header>
-        <h1>GEOTE Climate – Semester Project</h1>
-        <p class="subtitle">
-          Database system for climate indicator analysis
-        </p>
-      </header>
+  <!-- Full-screen map -->
+  <div id="mapContainer"><div id="map"></div></div>
 
-      <section class="control-section">
-        <h2>1. Spatial Unit</h2>
+  <!-- Top bar -->
+  <header id="topBar">
+    <div class="brand">
+      <svg class="brand-icon" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="url(#g)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <defs><linearGradient id="g" x1="2" y1="2" x2="22" y2="22"><stop stop-color="#38bdf8"/><stop offset="1" stop-color="#818cf8"/></linearGradient></defs>
+      </svg>
+      <div class="brand-text">
+        <span class="brand-name">GEOTE Climate</span>
+        <span class="brand-sub">Czech Republic · Spatial Climate Analysis</span>
+      </div>
+    </div>
+    <div class="top-right">
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        <span>Connected</span>
+      </div>
+    </div>
+  </header>
 
-        <label for="unitTypeSelect">Unit Type</label>
-        <select id="unitTypeSelect">
-          <option value="orp">ORP</option>
-          <option value="chko" selected>CHKO</option>
+  <!-- Floating control card -->
+  <div id="controlCard">
+    <div class="card-header">
+      <span class="card-title">Controls</span>
+      <button id="collapseBtn" class="icon-btn" title="Collapse">−</button>
+    </div>
+
+    <div id="cardBody">
+
+      <div class="field-group">
+        <label class="field-label">Unit Type</label>
+        <select id="unitTypeSelect" class="sel">
+          <option value="orp">ORP — Administrative</option>
+          <option value="chko" selected>CHKO — Protected Landscape</option>
           <option value="custom">Custom Polygon</option>
         </select>
+      </div>
 
-        <div style="margin-top: 8px; margin-bottom: 8px;">
-          <label style="display: flex; align-items: center; gap: 6px;">
-            <input type="checkbox" id="multiSelectMode" />
-            Multi-select mode (Shift+click)
-          </label>
-        </div>
+      <div id="unitSelectWrapper" class="field-group">
+        <label class="field-label">Select Unit</label>
+        <select id="unitSelect" multiple size="6" class="sel unit-list">
+          <option value="">Loading…</option>
+        </select>
+      </div>
 
-        <div id="unitSelectWrapper">
-          <label for="unitSelect">Select Unit</label>
-          <select id="unitSelect" multiple="true" size="8">
-            <option value="">Loading…</option>
-          </select>
-          <p id="selectionCount" style="font-size: 0.9em; color: #666; margin-top: 4px; display: none;"></p>
-        </div>
+      <p id="customPolygonHint" class="hint" style="display:none">
+        Use the drawing tool on the map to define a polygon.
+      </p>
 
-        <p class="hint" id="customPolygonHint" style="display:none;">
-          Select "Custom Polygon" and use the drawing tool on the map.
-        </p>
+      <div id="geojsonUploadWrapper" style="display:none" class="field-group">
+        <label class="field-label">Upload GeoJSON / S-JTSK</label>
+        <input type="file" id="geojsonUpload" accept=".geojson,.json" class="file-input"/>
+      </div>
 
-        <!-- GEOJSON UPLOAD -->
-        <div id="geojsonUploadWrapper" style="display:none; margin-top:10px;">
-          <label for="geojsonUpload"><strong>Upload GeoJSON</strong></label>
-          <input type="file" id="geojsonUpload" accept=".geojson,.json" />
-        </div>
-      </section>
+      <div class="row-between">
+        <label class="toggle-row">
+          <input type="checkbox" id="multiSelectMode"/>
+          <span class="track"></span>
+          <span class="toggle-label-text">Multi-select</span>
+        </label>
+        <span id="selectionCount" class="badge" style="display:none">0 selected</span>
+      </div>
 
-      <section class="control-section">
-        <h2>2. Climate Normal & Indicator</h2>
+      <div class="divider"></div>
 
-        <label for="normalSelect">Reference Normal</label>
-        <select id="normalSelect">
-          <option value="old">Old Normal</option>
-          <option value="new">New Normal</option>
+      <div class="field-group">
+        <label class="field-label">Reference Normal</label>
+        <select id="normalSelect" class="sel">
+          <option value="old">Old Normal (pre-1991)</option>
+          <option value="new">New Normal (1991–2020)</option>
           <option value="future">Prediction 2050</option>
         </select>
+      </div>
 
-        <label for="indicatorSelect">Climate Indicator</label>
-        <select id="indicatorSelect">
-          <option value="demartonne">De Martonne aridity index</option>
-          <option value="pet">Potential Evapotranspiration (Thornthwaite)</option>
+      <div class="field-group">
+        <label class="field-label">Climate Indicator</label>
+        <select id="indicatorSelect" class="sel">
+          <option value="demartonne">De Martonne Aridity Index</option>
+          <option value="pet">Potential Evapotranspiration</option>
         </select>
-      </section>
-
-      <section class="control-section">
-        <button id="computeBtn" class="primary-btn">Calculate</button>
-        <button id="computeAllBtn" class="primary-btn" style="display:none;">Calculate All</button>
-        <p id="statusMessage" class="status"></p>
-        <div id="stopwatch">Calculation time: 0.00 s</div>
-      </section>
-
-      <section class="results-section">
-        <h2>Normals Table</h2>
-        <div class="table-wrapper">
-          <table id="resultsTable">
-            <thead>
-              <tr>
-                <th>Normal</th>
-                <th>T [°C]</th>
-                <th>R [mm]</th>
-                <th>Index</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </section>
-    </aside>
-
-    <main id="mapContainer">
-      <div id="map"></div>
-    </main>
-
-    <aside id="rightSidebar">
-      <div id="topRightSection">
-        <section class="results-section">
-          <h2>Results</h2>
-          <div id="resultsSummary" class="summary-box">
-            <p>No calculation has been performed yet.</p>
-          </div>
-          <div style="margin-top:8px;">
-            <button id="exportGeoBtn" style="display:none;" class="secondary-btn">Export GeoJSON</button>
-          </div>
-        </section>
       </div>
 
-      <div id="bottomRightSection">
-        <section class="results-section">
-          <canvas id="resultsChart"></canvas>
-        </section>
-      </div>
-    </aside>
+      <button id="computeBtn" class="btn-calc">
+        <span class="btn-icon">⟳</span>
+        <span>Calculate</span>
+      </button>
+      <button id="computeAllBtn" class="btn-calc" style="display:none">
+        <span class="btn-icon">⟳</span>
+        <span>Calculate All</span>
+      </button>
+
+      <div id="statusMessage" class="status-msg"></div>
+      <div id="stopwatch" class="stopwatch-text">Calculation time: 0.00 s</div>
+
+    </div>
   </div>
 
-  <!-- Scripts -->
-  <!-- Load configuration FIRST (production or local) -->
-  <!-- For production deployment, uncomment this: -->
-  <!-- <script src="./js/config.production.js"></script> -->
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
-  <script src="./js/api.js"></script>
-  <script src="./js/compute.js"></script>
-  <script src="./js/charts.js"></script>
-  <script src="./js/map.js"></script>
-  <script src="./js/ui.js"></script>
-  
+  <!-- Results bottom sheet -->
+  <div id="resultsSheet">
+    <div class="sheet-bar">
+      <div class="sheet-handle"></div>
+      <div class="sheet-actions">
+        <button id="exportGeoBtn" class="btn-export" style="display:none">↓ Export GeoJSON</button>
+        <button id="closeSheetBtn" class="icon-btn">✕</button>
+      </div>
+    </div>
 
+    <div class="sheet-scroll">
+      <div id="resultsSummary" class="summary">
+        <p class="placeholder">Select a unit and calculate to see results.</p>
+      </div>
+
+      <div class="table-wrap">
+        <table id="resultsTable">
+          <thead>
+            <tr><th>Normal</th><th>T °C</th><th>R mm</th><th>Index</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="chart-area">
+        <canvas id="resultsChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
+<script src="./js/config.production.js"></script>
+<script src="./js/api.js"></script>
+<script src="./js/compute.js"></script>
+<script src="./js/charts.js"></script>
+<script src="./js/map.js"></script>
+<script src="./js/ui.js"></script>
+
+<script>
+  // Collapse/expand control card
+  const card = document.getElementById('controlCard');
+  const body = document.getElementById('cardBody');
+  const btn  = document.getElementById('collapseBtn');
+  btn.addEventListener('click', () => {
+    const collapsed = card.classList.toggle('collapsed');
+    btn.textContent = collapsed ? '+' : '−';
+  });
+
+  // Close results sheet
+  document.getElementById('closeSheetBtn').addEventListener('click', () => {
+    document.getElementById('resultsSheet').classList.remove('open');
+  });
+
+  // Open results sheet when results are populated
+  const observer = new MutationObserver(() => {
+    const summary = document.getElementById('resultsSummary');
+    if (!summary.querySelector('.placeholder')) {
+      document.getElementById('resultsSheet').classList.add('open');
+    }
+  });
+  observer.observe(document.getElementById('resultsSummary'), { childList: true, subtree: true });
+</script>
 </body>
 </html>

@@ -96,11 +96,13 @@ ClimateApp.map = (function () {
     map = L.map("map", {
       center: [49.8, 15.5],
       zoom: 7,
-      zoomControl: true,
+      zoomControl: false,
     });
+    L.control.zoom({ position: 'topright' }).addTo(map);
 
-    baseLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19
+    baseLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
     }).addTo(map);
 
     L.control.scale().addTo(map); // Scale control

@@ -5,14 +5,14 @@
 window.ClimateApp = window.ClimateApp || {};
 
 ClimateApp.config = {
-  // pg_featureserv na tvém serveru (Tailscale IP)
-  BASE_API_URL: "http://100.95.250.20:9000",
-  
-  // Node.js backend na tvém serveru
-  BACKEND_URL: "http://100.95.250.20:4000",
-  
+  // pg_featureserv na serveru (lokální IP)
+  BASE_API_URL: "http://192.168.34.4:9000",
+
+  // Node.js backend na serveru
+  BACKEND_URL: "http://192.168.34.4:4000",
+
   // Tile server (pokud běží)
-  TILE_URL: "http://100.95.250.20:7800/public.climate_master_geom/{z}/{x}/{y}.png"
+  TILE_URL: "http://192.168.34.4:7800/public.climate_master_geom/{z}/{x}/{y}.png"
 };
 
 // Note: Tailscale IP 100.95.250.20 je přístupné jen v Tailscale síti

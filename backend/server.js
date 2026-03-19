@@ -12,6 +12,7 @@ const app = express();
 // CORS configuration - allow requests from your hosting domain
 const corsOptions = {
   origin: [
+    'http://localhost:3000',      // Local development (serve)
     'http://localhost:5500',      // Local development (Live Server)
     'http://localhost',            // Local development
     'http://127.0.0.1',           // Local development
