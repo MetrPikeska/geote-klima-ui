@@ -139,17 +139,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // === Single calculation ===
   computeBtn.addEventListener("click", async () => {
     statusMessage.textContent = "Calculating...";
+    computeBtn.classList.add('loading');
+    computeBtn.disabled = true;
     startStopwatch();
 
     try {
       const selection = getCurrentSelection();
-      console.log('[DEBUG] Current Selection:', {
-        type: selection?.type,
-        label: selection?.label,
-        hasGeometry: !!selection?.geometry,
-        geometryType: selection?.geometry?.type,
-        geometryCoords: selection?.geometry?.coordinates ? `array(${selection.geometry.coordinates.length})` : 'N/A'
-      });
 
       if (!selection) {
         statusMessage.textContent = "Select a unit or load/draw a polygon.";
@@ -164,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       const indicatorKey = document.getElementById("indicatorSelect").value;
-      const filteredNormals = climateData.normals.filter(n => n.T != null && n.R != null);
+      const filteredNormals = climateData.normals.filter(n => n.T != null);
       const filteredClimateData = { ...climateData, normals: filteredNormals };
 
       const results = ClimateApp.compute.computeForIndicator(filteredClimateData, indicatorKey);
@@ -208,7 +203,7 @@ document.addEventListener("DOMContentLoaded", () => {
           console.error('Export error:', e);
         } finally {
           exportBtn.disabled = false;
-          exportBtn.textContent = 'Export GeoJSON';
+          exportBtn.textContent = '↓ Export GeoJSON';
         }
       };
 
@@ -217,6 +212,9 @@ document.addEventListener("DOMContentLoaded", () => {
       statusMessage.textContent = "Calculation error.";
       stopStopwatch();
       stopwatch.textContent = "Calculation time: Error";
+    } finally {
+      computeBtn.classList.remove('loading');
+      computeBtn.disabled = false;
     }
   });
 
@@ -228,6 +226,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     statusMessage.textContent = "Computing batch...";
+    computeAllBtn.classList.add('loading');
+    computeAllBtn.disabled = true;
     startStopwatch();
 
     try {
@@ -258,7 +258,10 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error(err);
       statusMessage.textContent = "Batch computation error.";
       stopStopwatch();
-      stopwatch.textContent = "Error";
+      stopwatch.textContent = "Calculation time: Error";
+    } finally {
+      computeAllBtn.classList.remove('loading');
+      computeAllBtn.disabled = false;
     }
   });
 
@@ -333,22 +336,43 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderResultsSummary(container, climateData, results, diffs, indicatorKey, allNormals) {
-    let html = "";
+    const indicatorName = indicatorKey === "demartonne"
+      ? "De Martonne aridity index"
+      : "Potential Evapotranspiration (Thornthwaite)";
 
-    const indicatorName =
-      indicatorKey === "demartonne"
-        ? "De Martonne aridity index"
-        : "Potential Evapotranspiration (Thornthwaite)";
+    let html = `<p><strong>${climateData.unitName || "Selected unit"}</strong></p>`;
+    html += `<p style="font-size:11px;color:var(--t3);margin-top:2px;">${indicatorName}</p>`;
 
-    html += `<p><strong>${climateData.unitName || "selected unit"}</strong></p>`;
-    html += `<p>Selected indicator: <strong>${indicatorName}</strong></p>`;
-
-    if (diffs.oldNew) {
-      html += `<p>New - Old: ΔT = ${diffs.oldNew.deltaT?.toFixed(2)}, ΔR = ${diffs.oldNew.deltaR?.toFixed(1)}, ΔIndex = ${diffs.oldNew.deltaIndex?.toFixed(2)}</p>`;
+    // Metric cards for each normal
+    if (results.length > 0) {
+      html += `<div class="metric-cards">`;
+      results.forEach(r => {
+        html += `
+          <div class="metric-card">
+            <div class="mc-label">${r.label}</div>
+            <div class="mc-value">${r.index != null ? r.index.toFixed(2) : '—'}</div>
+            <div class="mc-sub">T: ${r.T != null ? r.T.toFixed(1) + '°C' : '—'} · R: ${r.R != null ? Math.round(r.R) + ' mm' : '—'}</div>
+          </div>`;
+      });
+      html += `</div>`;
     }
 
-    if (diffs.newFuture) {
-      html += `<p>Prediction - New: ΔT = ${diffs.newFuture.deltaT?.toFixed(2)}, ΔR = ${diffs.newFuture.deltaR?.toFixed(1)}, ΔIndex = ${diffs.newFuture.deltaIndex?.toFixed(2)}</p>`;
+    // Delta chips
+    const deltaChips = [];
+    if (diffs.oldNew?.deltaIndex != null) {
+      const d = diffs.oldNew.deltaIndex;
+      const cls = d > 0 ? 'pos' : d < 0 ? 'neg' : 'neutral';
+      const sign = d > 0 ? '+' : '';
+      deltaChips.push(`<span class="delta-chip ${cls}">New − Old: ${sign}${d.toFixed(2)}</span>`);
+    }
+    if (diffs.newFuture?.deltaIndex != null) {
+      const d = diffs.newFuture.deltaIndex;
+      const cls = d > 0 ? 'pos' : d < 0 ? 'neg' : 'neutral';
+      const sign = d > 0 ? '+' : '';
+      deltaChips.push(`<span class="delta-chip ${cls}">Future − New: ${sign}${d.toFixed(2)}</span>`);
+    }
+    if (deltaChips.length > 0) {
+      html += `<div class="delta-row">${deltaChips.join('')}</div>`;
     }
 
     container.innerHTML = html;
@@ -452,32 +476,60 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const indicatorLabel = indicatorKey === "demartonne" ? "De Martonne Index" : "PET";
 
+    const TITLE_COLOR = '#e5e7eb';
+    const TICK = '#94a3b8';
+    const GRID = 'rgba(148, 163, 184, 0.15)';
+
     return new Chart(canvas, {
       type: 'bar',
       data: {
         labels,
         datasets: [
           {
-            label: 'New Normal (1991-2020)',
+            label: 'New Normal (1991–2020)',
             data: dataNew,
-            backgroundColor: 'rgba(54, 162, 235, 0.7)'
+            backgroundColor: 'rgba(56, 189, 248, 0.55)',
+            borderColor: 'rgba(56, 189, 248, 0.9)',
+            borderWidth: 1,
           },
           {
             label: 'Prediction 2050',
             data: dataFuture,
-            backgroundColor: 'rgba(255, 99, 132, 0.7)'
+            backgroundColor: 'rgba(167, 139, 250, 0.55)',
+            borderColor: 'rgba(167, 139, 250, 0.9)',
+            borderWidth: 1,
           }
         ]
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
         plugins: {
-          title: { display: true, text: `${indicatorLabel} Comparison Across Units` },
-          legend: { display: true }
+          title: {
+            display: true,
+            text: `${indicatorLabel} — Batch Comparison`,
+            color: TITLE_COLOR,
+            font: { size: 15 },
+          },
+          legend: {
+            display: true,
+            position: 'top',
+            labels: { color: TITLE_COLOR, usePointStyle: true, padding: 14, font: { size: 11 } },
+          },
         },
         scales: {
-          y: { beginAtZero: true, title: { display: true, text: indicatorLabel } }
-        }
+          y: {
+            beginAtZero: false,
+            title: { display: true, text: indicatorLabel, color: TITLE_COLOR, font: { size: 11 } },
+            ticks: { color: TICK },
+            grid: { color: GRID },
+          },
+          x: {
+            ticks: { color: TICK },
+            grid: { color: GRID },
+          },
+        },
       }
     });
   }

@@ -45,9 +45,7 @@
   --switcher-h:  38px;
   --switcher-gap: 10px;
   --card-top:    calc(var(--topbar) + 12px + var(--switcher-h) + var(--switcher-gap));
-  --draw-w:      36px;   /* Leaflet draw toolbar width */
-  --draw-gap:    8px;
-  --card-left:   calc(12px + var(--draw-w) + var(--draw-gap));
+  --card-left:   12px;   /* svislý sloupec: switcher → draw toolbar → control card */
   --card-w:      268px;
   --sheet-h:     60vh;
 }
@@ -83,13 +81,15 @@ html, body {
 
 /* ── Leaflet overrides ─────────────────────────────────── */
 
-/* Zoom controls */
+/* Zoom controls — pravý panel, posunutý pod topbar */
 .leaflet-control-zoom {
   border: 1px solid var(--bdr) !important;
   border-radius: var(--r2) !important;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0,0,0,.5) !important;
-  margin-top: calc(var(--topbar) + 12px) !important;
+}
+.leaflet-top.leaflet-right {
+  margin-top: calc(var(--topbar) + 12px);
 }
 
 .leaflet-control-zoom a {
@@ -104,7 +104,13 @@ html, body {
   color: var(--c1) !important;
 }
 
-/* Draw toolbar */
+/* Draw toolbar — vertical (right side, below zoom) */
+.leaflet-draw-toolbar {
+  border: 1px solid var(--bdr) !important;
+  border-radius: var(--r2) !important;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,.5) !important;
+}
 .leaflet-draw-toolbar a {
   background-color: rgba(6, 12, 28, 0.88) !important;
   border-color: var(--bdr) !important;
@@ -115,18 +121,6 @@ html, body {
 .leaflet-draw-toolbar a:hover {
   background-color: rgba(20, 40, 90, 0.95) !important;
   color: var(--c1) !important;
-}
-.leaflet-draw-toolbar {
-  border: 1px solid var(--bdr) !important;
-  border-radius: var(--r2) !important;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0,0,0,.5) !important;
-}
-
-/* Draw toolbar: left column */
-.leaflet-top.leaflet-left {
-  top: var(--card-top) !important;
-  left: 12px !important;
 }
 
 /* Attribution */
@@ -169,6 +163,15 @@ html, body {
 .brand-sub { font-size: 10px; color: var(--t3); letter-spacing: .01em; }
 
 .top-right { display: flex; align-items: center; gap: 10px; }
+
+.github-link {
+  display: flex;
+  align-items: center;
+  color: var(--t3);
+  transition: color var(--dur) var(--ease);
+  text-decoration: none;
+}
+.github-link:hover { color: var(--t1); }
 
 .status-pill {
   display: flex; align-items: center; gap: 6px;
@@ -574,8 +577,103 @@ html, body {
 }
 
 /* ============================================================
+   BUTTON — LOADING STATE
+   ============================================================ */
+.btn-calc:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+.btn-calc:disabled::after { opacity: 0 !important; }
+.btn-calc.loading .btn-icon {
+  animation: spin 0.9s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   RESULTS SUMMARY — METRIC CARDS
+   ============================================================ */
+.metric-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 6px;
+  margin-top: 4px;
+}
+.metric-card {
+  background: rgba(3, 9, 18, 0.55);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r2);
+  padding: 10px 10px 8px;
+  text-align: center;
+}
+.mc-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin-bottom: 5px;
+}
+.mc-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--c1);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--fd);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.mc-sub {
+  font-size: 9.5px;
+  color: var(--t3);
+}
+.delta-row {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.delta-chip {
+  font-size: 10.5px;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.delta-chip.pos {
+  background: rgba(74, 222, 128, .1);
+  border: 1px solid rgba(74, 222, 128, .25);
+  color: var(--green);
+}
+.delta-chip.neg {
+  background: rgba(248, 113, 113, .1);
+  border: 1px solid rgba(248, 113, 113, .25);
+  color: var(--red);
+}
+.delta-chip.neutral {
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--bdr);
+  color: var(--t2);
+}
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
+/* Desktop: results sheet content avoids the control card */
+@media (min-width: 601px) {
+  .sheet-bar,
+  .sheet-scroll {
+    padding-left: calc(var(--card-left) + var(--card-w) + 16px);
+  }
+  /* When card is collapsed, restore normal padding */
+  #controlCard.collapsed ~ #resultsSheet .sheet-bar,
+  #controlCard.collapsed ~ #resultsSheet .sheet-scroll {
+    padding-left: 16px;
+  }
+}
+
 @media (max-width: 600px) {
   :root {
     --card-w: calc(100vw - 24px);

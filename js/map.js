@@ -133,7 +133,7 @@ ClimateApp.map = (function () {
     map.addLayer(drawnItems);
 
     drawControl = new L.Control.Draw({
-      position: 'topleft',
+      position: 'topright',
       draw: {
         polyline: false, rectangle: false, circle: false,
         circlemarker: false, marker: false,
@@ -146,6 +146,17 @@ ClimateApp.map = (function () {
       edit: { featureGroup: drawnItems },
     });
     map.addControl(drawControl);
+
+    // Levý sloupec: mapSwitcher → controlCard těsně pod sebou
+    setTimeout(() => {
+      const switcher = document.getElementById('mapSwitcher');
+      const card = document.getElementById('controlCard');
+      if (switcher && card) {
+        const cardTop = switcher.offsetTop + switcher.offsetHeight + 8;
+        card.style.top = cardTop + 'px';
+        card.style.left = '12px';
+      }
+    }, 50);
 
     map.on(L.Draw.Event.CREATED, event => {
       drawnItems.clearLayers();
