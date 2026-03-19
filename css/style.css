@@ -106,21 +106,31 @@ html, body {
 
 /* Draw toolbar — vertical (right side, below zoom) */
 .leaflet-draw-toolbar {
+  background: rgba(6, 12, 28, 0.88) !important;
+  backdrop-filter: blur(12px) !important;
   border: 1px solid var(--bdr) !important;
   border-radius: var(--r2) !important;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0,0,0,.5) !important;
 }
 .leaflet-draw-toolbar a {
-  background-color: rgba(6, 12, 28, 0.88) !important;
+  /* transparent bg so filter only affects the icon, not the container bg */
+  background-color: transparent !important;
   border-color: var(--bdr) !important;
-  color: var(--t2) !important;
-  backdrop-filter: blur(12px);
-  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease) !important;
+  /* black icon → white */
+  filter: brightness(0) invert(0.75) !important;
+  transition: background-color var(--dur) var(--ease), filter var(--dur) var(--ease) !important;
 }
 .leaflet-draw-toolbar a:hover {
-  background-color: rgba(20, 40, 90, 0.95) !important;
-  color: var(--c1) !important;
+  background-color: var(--c1-dim) !important;
+  /* black icon → #38BDF8 */
+  filter: brightness(0) saturate(100%) invert(73%) sepia(85%) saturate(776%) hue-rotate(168deg) brightness(105%) !important;
+}
+/* Active edit/remove button highlight */
+.leaflet-draw-edit-toolbar .leaflet-draw-edit-edit:not(.leaflet-disabled),
+.leaflet-draw-edit-toolbar .leaflet-draw-edit-remove:not(.leaflet-disabled) {
+  filter: brightness(0) saturate(100%) invert(73%) sepia(85%) saturate(776%) hue-rotate(168deg) brightness(105%) !important;
+  background-color: var(--c1-dim) !important;
 }
 
 /* Attribution */
@@ -676,12 +686,55 @@ html, body {
 
 @media (max-width: 600px) {
   :root {
+    --topbar: 44px;
+    --switcher-h: 34px;
     --card-w: calc(100vw - 24px);
-    --sheet-h: 70vh;
+    --card-left: 12px;
+    --sheet-h: 62vh;
   }
-  :root { --card-left: 12px; }
+
+  /* Map switcher — nespanuj celou šířku, nechej místo pro zoom vpravo */
+  #mapSwitcher {
+    left: 12px;
+    right: auto;
+    max-width: calc(100vw - 72px);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  #mapSwitcher::-webkit-scrollbar { display: none; }
+
+  .map-btn { padding: 5px 10px; font-size: 11px; white-space: nowrap; }
+
+  /* Control card plná šířka */
   #controlCard { left: 12px; right: 12px; width: auto; }
-  #mapSwitcher { left: 12px; right: 12px; justify-content: space-between; }
-  .map-btn { flex: 1; text-align: center; padding: 5px 8px; font-size: 11px; }
-  .leaflet-top.leaflet-left { left: 12px !important; }
+
+  /* Větší touch targety pro selecty a tlačítka */
+  .sel { padding: 10px 28px 10px 10px; font-size: 14px; }
+  .unit-list { height: 120px; font-size: 13px; }
+  .btn-calc { padding: 13px 16px; font-size: 14px; }
+  .icon-btn { width: 28px; height: 28px; font-size: 15px; }
+  .toggle-label-text { font-size: 13px; }
+  .track { width: 32px; height: 18px; }
+  .track::after { width: 12px; height: 12px; }
+  .toggle-row input:checked + .track::after { transform: translateX(14px); }
+
+  /* Card body — nižší max-height aby byl vždy vidět Vypočítat */
+  #cardBody { max-height: calc(100vh - var(--card-top) - 180px); }
+
+  /* Results sheet — žádný left padding (karta je nad sheetem) */
+  .sheet-bar,
+  .sheet-scroll { padding-left: 16px !important; }
+
+  /* Metric karty — 2 sloupce na mobilu */
+  .metric-cards { grid-template-columns: repeat(2, 1fr); }
+
+  /* Zoom controls */
+  .leaflet-top.leaflet-right { margin-top: calc(var(--topbar) + 8px); }
+
+  /* Draw toolbar touch targets */
+  .leaflet-draw-toolbar a {
+    width: 36px !important;
+    height: 36px !important;
+    line-height: 36px !important;
+  }
 }
