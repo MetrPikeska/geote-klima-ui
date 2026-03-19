@@ -198,9 +198,9 @@ Projekt vyvinut pro předmět GEOTE (Katedra geoinformatiky, ZS 2025). Demonstru
 
 ## 📜 Licence
 
-MIT License — Copyright (c) 2025 Petr Mikeška
+MIT License — Copyright (c) 2025 Petr Mikeska
 
 ---
 
-**Autor:** [Petr Mikeška](https://github.com/MetrPikeska) · [petrmikeska.cz](https://petrmikeska.cz)  
+**Autor:** [Petr Mikeska](https://github.com/MetrPikeska) · [petrmikeska.cz](https://petrmikeska.cz)  
 **Verze:** 2.0.0 · **Aktualizováno:** Březen 2026
