@@ -55,3 +55,6 @@ temp/
 # Compiled / Distribution
 dist/
 build/
+
+# Production config (contains live Cloudflare Tunnel URLs — generate with start-tunnels.sh)
+js/config.production.js

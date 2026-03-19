@@ -1,247 +1,215 @@
 // === map.js ===
-// Module for map and polygon drawing
+// Module for map, polygon drawing, and WMS layer switching
 
 window.ClimateApp = window.ClimateApp || {};
 
 ClimateApp.map = (function () {
 
   let map;
-  let baseLayer;
+  let currentBaseLayer = null;
+  let katastrOverlay = null;
   let drawnItems;
   let drawControl;
   let unitLayer;
+  let activeLayerKey = 'dark';
 
-  // === S-JTSK (EPSG:5514) definition for proj4 ===
-  if (typeof proj4 !== "undefined") {
+  // === S-JTSK (EPSG:5514) definition ===
+  if (typeof proj4 !== 'undefined') {
     proj4.defs(
-      "EPSG:5514",
-      "+proj=krovak +lat_0=49.5 +lon_0=24.83333333333333 " +
-      "+k=-0.9999 +x_0=0 +y_0=0 +ellps=bessel +units=m +no_defs"
+      'EPSG:5514',
+      '+proj=krovak +lat_0=49.5 +lon_0=24.83333333333333 ' +
+      '+k=-0.9999 +x_0=0 +y_0=0 +ellps=bessel +units=m +no_defs'
     );
   }
 
-  // === GEOJSON 5514 -> WGS84 CONVERSION (only if coordinates are outside WGS84 range) ===
-  function convertToWGS84IfNeeded(geojson) {
+  // ============================================================
+  //  Layer definitions
+  // ============================================================
+  const LAYERS = {
+    dark: () => L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      { maxZoom: 20, attribution: '© OpenStreetMap © CARTO' }
+    ),
 
-    // WGS84 has lon -180 to 180, lat -90 to 90
+    osm: () => L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }
+    ),
+
+    ortofoto: () => L.tileLayer.wms(
+      'https://ags.cuzk.cz/arcgis1/services/ORTOFOTO/MapServer/WMSServer',
+      {
+        layers: '0',
+        format: 'image/jpeg',
+        transparent: false,
+        version: '1.3.0',
+        maxZoom: 20,
+        attribution: '© <a href="https://www.cuzk.cz">ČÚZK</a> – Ortofoto ČR',
+      }
+    ),
+
+    katastrBase: () => L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { maxZoom: 19, attribution: '© OpenStreetMap' }
+    ),
+
+    katastrWMS: () => L.tileLayer.wms(
+      'https://services.cuzk.cz/wms/wms.asp',
+      {
+        layers: 'KN',
+        format: 'image/png',
+        transparent: true,
+        version: '1.3.0',
+        opacity: 0.85,
+        maxZoom: 19,
+        attribution: '© <a href="https://www.cuzk.cz">ČÚZK</a> – Katastr nemovitostí',
+      }
+    ),
+  };
+
+  // ============================================================
+  //  Layer switching
+  // ============================================================
+  function switchLayer(key) {
+    if (key === activeLayerKey) return;
+    activeLayerKey = key;
+
+    // Remove current base
+    if (currentBaseLayer) { map.removeLayer(currentBaseLayer); currentBaseLayer = null; }
+    // Remove katastr overlay if present
+    if (katastrOverlay) { map.removeLayer(katastrOverlay); katastrOverlay = null; }
+
+    if (key === 'katastr') {
+      currentBaseLayer = LAYERS.katastrBase().addTo(map);
+      katastrOverlay   = LAYERS.katastrWMS().addTo(map);
+    } else {
+      currentBaseLayer = LAYERS[key]().addTo(map);
+    }
+
+    // Update switcher button states
+    document.querySelectorAll('.map-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.layer === key);
+    });
+  }
+
+  // ============================================================
+  //  Coordinate conversion
+  // ============================================================
+  function convertToWGS84IfNeeded(geojson) {
     function looksLikeWGS84(coords) {
       return coords.every(ring =>
-        ring.every(([x, y]) =>
-          x >= -180 && x <= 180 && y >= -90 && y <= 90
-        )
+        ring.every(([x, y]) => x >= -180 && x <= 180 && y >= -90 && y <= 90)
       );
     }
-
     function convertPolygon(coords) {
       return coords.map(ring =>
-        ring.map(coord => {
-          const [x, y] = coord;
-          const [lon, lat] = proj4("EPSG:5514", "EPSG:4326", [x, y]);
-          return [lon, lat];
-        })
+        ring.map(([x, y]) => { const [lon, lat] = proj4('EPSG:5514', 'EPSG:4326', [x, y]); return [lon, lat]; })
       );
     }
-
-    // If geojson is not a feature → skip
-    if (geojson.type !== "Feature") return geojson;
-
+    if (geojson.type !== 'Feature') return geojson;
     const geom = geojson.geometry;
-
-    if (geom.type === "Polygon") {
-      if (!looksLikeWGS84(geom.coordinates)) {
-        geojson.geometry.coordinates = convertPolygon(geom.coordinates);
-      }
+    if (geom.type === 'Polygon' && !looksLikeWGS84(geom.coordinates)) {
+      geojson.geometry.coordinates = convertPolygon(geom.coordinates);
     }
-
-    if (geom.type === "MultiPolygon") {
-      if (!looksLikeWGS4(geom.coordinates[0])) {
-        geojson.geometry.coordinates = geom.coordinates.map(poly =>
-          convertPolygon(poly)
-        );
-      }
+    if (geom.type === 'MultiPolygon' && !looksLikeWGS84(geom.coordinates[0])) {
+      geojson.geometry.coordinates = geom.coordinates.map(poly => convertPolygon(poly));
     }
-
     return geojson;
   }
 
-  // === Generates HTML content for a Leaflet popup ===
-  function getPopupContent(properties) { // ADDED: Function to generate popup content
-    let content = "<h4>Polygon Info</h4>";
-    if (properties) {
-      for (const key in properties) {
-        if (Object.hasOwnProperty.call(properties, key)) {
-          const value = properties[key];
-          // Basic check for non-object values to display
-          if (typeof value !== 'object' && typeof value !== 'function') {
-            content += `<p><strong>${key}:</strong> ${value}</p>`;
-          }
-        }
-      }
-    } else {
-      content += "<p>No properties available.</p>";
-    }
-
-    // ADDED: Approximate area calculation for custom polygons if no area property is found
-    if (!properties || !properties.area) {
-      // This is a placeholder. Accurate area calculation for arbitrary polygons requires a library like turf.js
-      // For demonstration, we can add a note or a very basic approximation if needed.
-      content += "<p>Area calculation not available or approximate.</p>";
-    }
-
-    return content;
-  }
-
-  // === Map Initialization ===
+  // ============================================================
+  //  Map initialization
+  // ============================================================
   function initMap() {
-    map = L.map("map", {
-      center: [49.8, 15.5],
-      zoom: 7,
-      zoomControl: false,
-    });
+    map = L.map('map', { center: [49.8, 15.5], zoom: 7, zoomControl: false });
+
     L.control.zoom({ position: 'topright' }).addTo(map);
+    L.control.scale({ position: 'bottomright', imperial: false }).addTo(map);
 
-    baseLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    }).addTo(map);
-
-    L.control.scale().addTo(map); // Scale control
+    // Initial base layer
+    currentBaseLayer = LAYERS.dark().addTo(map);
 
     drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
 
     drawControl = new L.Control.Draw({
-      position: "topleft",
+      position: 'topleft',
       draw: {
-        polyline: false,
-        rectangle: false,
-        circle: false,
-        circlemarker: false,
-        marker: false,
+        polyline: false, rectangle: false, circle: false,
+        circlemarker: false, marker: false,
         polygon: {
           allowIntersection: false,
           showArea: true,
-          shapeOptions: {
-            color: "#38bdf8",
-            weight: 2
-          }
-        }
+          shapeOptions: { color: '#38bdf8', weight: 2 },
+        },
       },
-      edit: {
-        featureGroup: drawnItems
-      }
+      edit: { featureGroup: drawnItems },
     });
-
     map.addControl(drawControl);
 
-    // === After drawing a polygon ===
     map.on(L.Draw.Event.CREATED, event => {
-      const layer = event.layer;
-
       drawnItems.clearLayers();
-      drawnItems.addLayer(layer);
-
-      ClimateApp.state.customPolygon = layer.toGeoJSON();
-      // No popup binding
+      drawnItems.addLayer(event.layer);
+      ClimateApp.state.customPolygon = event.layer.toGeoJSON();
     });
 
-    // Enable upload
+    // Wire map switcher buttons
+    document.querySelectorAll('.map-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchLayer(btn.dataset.layer));
+    });
+
     enableGeoJSONUpload();
   }
 
-  // === Displaying ORP/CHKO polygon ===
+  // ============================================================
+  //  Show ORP/CHKO geometry
+  // ============================================================
   function showUnitGeometry(geom) {
-
-    if (unitLayer) {
-      map.removeLayer(unitLayer);
-      unitLayer = null;
-    }
-
+    if (unitLayer) { map.removeLayer(unitLayer); unitLayer = null; }
     unitLayer = L.geoJSON(geom, {
-      style: {
-        color: "#a855f7",
-        weight: 2,
-        fillOpacity: 0.15
-      },
-      onEachFeature: function(feature, layer) { 
-        // No popup binding
-      }
+      style: { color: '#a855f7', weight: 2, fillOpacity: 0.15 },
     }).addTo(map);
-
     map.fitBounds(unitLayer.getBounds());
   }
 
-  // === GeoJSON Upload ===
+  // ============================================================
+  //  GeoJSON upload
+  // ============================================================
   function enableGeoJSONUpload() {
-    const input = document.getElementById("geojsonUpload");
+    const input = document.getElementById('geojsonUpload');
     if (!input) return;
-
-    input.addEventListener("change", e => {
+    input.addEventListener('change', e => {
       const file = e.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
-
-      reader.onload = event => {
+      reader.onload = ev => {
         try {
-          let geojson = JSON.parse(event.target.result);
-
-          // FeatureCollection → take the first feature
-          if (geojson.type === "FeatureCollection") {
-            if (!geojson.features || geojson.features.length === 0) {
-              alert("FeatureCollection contains no features.");
-              return;
-            }
+          let geojson = JSON.parse(ev.target.result);
+          if (geojson.type === 'FeatureCollection') {
+            if (!geojson.features?.length) { alert('FeatureCollection is empty.'); return; }
             geojson = geojson.features[0];
-            console.log("Converted FeatureCollection → Feature");
           }
-
-          // Convert S-JTSK → WGS84 only if it`s not WGS
           geojson = convertToWGS84IfNeeded(geojson);
-
-          // Render
           drawnItems.clearLayers();
-
           const layer = L.geoJSON(geojson, {
-            style: {
-              color: "#38bdf8",
-              weight: 2,
-              fillOpacity: 0.2
-            },
-            onEachFeature: function(feature, layer) {
-              // No popup binding
-            }
+            style: { color: '#38bdf8', weight: 2, fillOpacity: 0.2 },
           }).addTo(drawnItems);
-
-          // Save to app state
           ClimateApp.state.customPolygon = geojson;
-
           map.fitBounds(layer.getBounds());
-          // No openPopup()
-
         } catch (err) {
-          alert("File is not a valid GeoJSON.");
+          alert('File is not valid GeoJSON.');
           console.error(err);
         }
       };
-
       reader.readAsText(file);
     });
   }
 
   function resetMapToDefault() {
-    // Remove the unit layer if displayed
-    if (unitLayer) {
-      map.removeLayer(unitLayer);
-      unitLayer = null;
-    }
-    // Reset map to default center and zoom
+    if (unitLayer) { map.removeLayer(unitLayer); unitLayer = null; }
     map.setView([49.8, 15.5], 7);
   }
 
-  return {
-    initMap,
-    showUnitGeometry,
-    resetMapToDefault
-  };
+  return { initMap, showUnitGeometry, resetMapToDefault, switchLayer };
+
 })();

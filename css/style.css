@@ -1,5 +1,5 @@
 /* ============================================================
-   GEOTE Climate — Design System v2
+   GEOTE Climate — Design System v3  (Mapy.cz style)
    ============================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
@@ -7,6 +7,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
+  /* Colors */
   --ink-0:   #030912;
   --ink-1:   #080f22;
   --ink-2:   rgba(6, 12, 28, 0.92);
@@ -31,15 +32,24 @@
   --r1: 8px;
   --r2: 14px;
   --r3: 20px;
+  --r-pill: 999px;
 
   --f:  'Inter', system-ui, sans-serif;
   --fd: 'Space Grotesk', 'Inter', sans-serif;
 
-  --topbar: 50px;
-  --card-w: 272px;
-  --sheet-h: 62vh;
   --ease: cubic-bezier(.4,0,.2,1);
-  --dur: .22s;
+  --dur: .2s;
+
+  /* Layout */
+  --topbar:      48px;
+  --switcher-h:  38px;
+  --switcher-gap: 10px;
+  --card-top:    calc(var(--topbar) + 12px + var(--switcher-h) + var(--switcher-gap));
+  --draw-w:      36px;   /* Leaflet draw toolbar width */
+  --draw-gap:    8px;
+  --card-left:   calc(12px + var(--draw-w) + var(--draw-gap));
+  --card-w:      268px;
+  --sheet-h:     60vh;
 }
 
 html, body {
@@ -63,38 +73,48 @@ html, body {
 /* ============================================================
    MAP
    ============================================================ */
-#mapContainer {
+#map {
   position: absolute;
   inset: 0;
   z-index: 0;
+  width: 100%;
+  height: 100%;
 }
-#map { width: 100%; height: 100%; }
 
-/* Leaflet overrides */
+/* ── Leaflet overrides ─────────────────────────────────── */
+
+/* Zoom controls */
 .leaflet-control-zoom {
   border: 1px solid var(--bdr) !important;
   border-radius: var(--r2) !important;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0,0,0,.5) !important;
+  margin-top: calc(var(--topbar) + 12px) !important;
 }
-.leaflet-control-zoom a,
-.leaflet-draw-toolbar a {
-  background: rgba(6, 12, 28, 0.9) !important;
+
+.leaflet-control-zoom a {
+  background-color: rgba(6, 12, 28, 0.88) !important;
   border-color: var(--bdr) !important;
   color: var(--t2) !important;
-  backdrop-filter: blur(10px);
-  transition: all var(--dur) var(--ease) !important;
+  backdrop-filter: blur(12px);
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease) !important;
 }
-.leaflet-control-zoom a:hover,
-.leaflet-draw-toolbar a:hover {
-  background: rgba(20, 40, 90, 0.95) !important;
+.leaflet-control-zoom a:hover {
+  background-color: rgba(20, 40, 90, 0.95) !important;
   color: var(--c1) !important;
 }
-.leaflet-control-attribution {
-  background: rgba(3, 9, 18, 0.75) !important;
-  color: var(--t3) !important;
-  font-size: 10px !important;
-  backdrop-filter: blur(8px);
+
+/* Draw toolbar */
+.leaflet-draw-toolbar a {
+  background-color: rgba(6, 12, 28, 0.88) !important;
+  border-color: var(--bdr) !important;
+  color: var(--t2) !important;
+  backdrop-filter: blur(12px);
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease) !important;
+}
+.leaflet-draw-toolbar a:hover {
+  background-color: rgba(20, 40, 90, 0.95) !important;
+  color: var(--c1) !important;
 }
 .leaflet-draw-toolbar {
   border: 1px solid var(--bdr) !important;
@@ -102,10 +122,19 @@ html, body {
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0,0,0,.5) !important;
 }
-/* Push draw toolbar to the right of the control card */
+
+/* Draw toolbar: left column */
 .leaflet-top.leaflet-left {
-  top: calc(var(--topbar) + 12px) !important;
-  left: calc(var(--card-w) + 24px) !important;
+  top: var(--card-top) !important;
+  left: 12px !important;
+}
+
+/* Attribution */
+.leaflet-control-attribution {
+  background: rgba(3, 9, 18, 0.75) !important;
+  color: var(--t3) !important;
+  font-size: 10px !important;
+  backdrop-filter: blur(8px);
 }
 
 /* ============================================================
@@ -119,7 +148,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 18px;
+  padding: 0 16px;
   background: rgba(3, 9, 18, 0.82);
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
@@ -128,20 +157,16 @@ html, body {
 
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand-icon { width: 22px; height: 22px; flex-shrink: 0; }
-.brand-text { display: flex; flex-direction: column; gap: 0; }
+.brand-text { display: flex; flex-direction: column; }
 .brand-name {
   font-family: var(--fd);
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: -.02em;
   color: var(--t1);
   line-height: 1.1;
 }
-.brand-sub {
-  font-size: 10px;
-  color: var(--t3);
-  letter-spacing: .01em;
-}
+.brand-sub { font-size: 10px; color: var(--t3); letter-spacing: .01em; }
 
 .top-right { display: flex; align-items: center; gap: 10px; }
 
@@ -150,7 +175,7 @@ html, body {
   padding: 4px 11px;
   background: var(--ink-3);
   border: 1px solid var(--bdr);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   font-size: 11px;
   color: var(--t2);
 }
@@ -161,15 +186,55 @@ html, body {
   box-shadow: 0 0 7px var(--green);
   animation: pulse 2.5s ease-in-out infinite;
 }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+/* ============================================================
+   MAP TYPE SWITCHER
+   ============================================================ */
+#mapSwitcher {
+  position: absolute;
+  top: calc(var(--topbar) + 12px);
+  left: 12px;
+  z-index: 850;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: rgba(6, 12, 28, 0.88);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r-pill);
+  box-shadow: 0 4px 20px rgba(0,0,0,.5);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+}
+
+.map-btn {
+  padding: 5px 14px;
+  border: none;
+  background: transparent;
+  border-radius: var(--r-pill);
+  color: var(--t2);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--f);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  line-height: 1;
+}
+.map-btn:hover { background: rgba(255,255,255,.05); color: var(--t1); }
+.map-btn.active {
+  background: var(--c1-dim);
+  color: var(--c1);
+  box-shadow: 0 0 0 1px rgba(56,189,248,.25) inset;
+}
 
 /* ============================================================
    CONTROL CARD
    ============================================================ */
 #controlCard {
   position: absolute;
-  top: calc(var(--topbar) + 12px);
-  left: 12px;
+  top: var(--card-top);
+  left: var(--card-left);
   width: var(--card-w);
   z-index: 800;
   background: var(--ink-2);
@@ -182,7 +247,6 @@ html, body {
   transition: all var(--dur) var(--ease);
 }
 
-/* collapsed state */
 #controlCard.collapsed #cardBody { display: none; }
 #controlCard.collapsed { border-radius: var(--r2); }
 
@@ -190,7 +254,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 11px 14px 10px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--bdr);
   cursor: default;
 }
@@ -222,7 +286,7 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: calc(100vh - var(--topbar) - 80px);
+  max-height: calc(100vh - var(--card-top) - 60px);
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--hover) transparent;
@@ -236,10 +300,10 @@ html, body {
 .field-group { display: flex; flex-direction: column; gap: 4px; }
 
 .field-label {
-  font-size: 10.5px;
-  font-weight: 500;
+  font-size: 10px;
+  font-weight: 600;
   color: var(--t3);
-  letter-spacing: .04em;
+  letter-spacing: .08em;
   text-transform: uppercase;
 }
 
@@ -265,7 +329,7 @@ html, body {
 .sel option { background: #0a1428; color: var(--t1); }
 
 .unit-list {
-  height: 140px;
+  height: 130px;
   padding: 3px 0;
   background-image: none;
   font-size: 12px;
@@ -296,7 +360,6 @@ html, body {
   font-family: var(--f);
 }
 
-/* row with toggle + badge */
 .row-between { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
 .toggle-row {
@@ -307,7 +370,7 @@ html, body {
 .track {
   width: 28px; height: 16px;
   background: rgba(255,255,255,.09);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   position: relative;
   transition: background var(--dur) var(--ease);
   flex-shrink: 0;
@@ -330,7 +393,7 @@ html, body {
   padding: 2px 8px;
   background: var(--c1-dim);
   border: 1px solid rgba(56,189,248,.28);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   color: var(--c1);
   white-space: nowrap;
 }
@@ -342,7 +405,7 @@ html, body {
    ============================================================ */
 .btn-calc {
   width: 100%;
-  padding: 10px 16px;
+  padding: 9px 16px;
   background: linear-gradient(135deg, var(--c1-dim), rgba(167,139,250,.14));
   border: 1px solid rgba(56,189,248,.32);
   border-radius: var(--r2);
@@ -365,26 +428,12 @@ html, body {
   transition: opacity var(--dur) var(--ease);
 }
 .btn-calc:hover::after { opacity: 1; }
-.btn-calc:hover {
-  border-color: rgba(56,189,248,.65);
-  box-shadow: 0 0 24px rgba(56,189,248,.2);
-  transform: translateY(-1px);
-}
+.btn-calc:hover { border-color: rgba(56,189,248,.65); box-shadow: 0 0 24px rgba(56,189,248,.2); transform: translateY(-1px); }
 .btn-calc:active { transform: none; box-shadow: none; }
 .btn-icon { font-size: 14px; }
 
-.status-msg {
-  font-size: 11.5px;
-  color: var(--t2);
-  text-align: center;
-  min-height: 14px;
-}
-.stopwatch-text {
-  font-size: 10.5px;
-  color: var(--t3);
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
+.status-msg { font-size: 11.5px; color: var(--t2); text-align: center; min-height: 14px; }
+.stopwatch-text { font-size: 10.5px; color: var(--t3); text-align: center; font-variant-numeric: tabular-nums; }
 
 /* ============================================================
    RESULTS BOTTOM SHEET
@@ -407,20 +456,27 @@ html, body {
 }
 #resultsSheet.open { transform: translateY(0); }
 
-/* sheet top bar */
 .sheet-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 10px 16px 8px;
   border-bottom: 1px solid var(--bdr);
   flex-shrink: 0;
+  gap: 12px;
 }
 .sheet-handle {
-  width: 36px; height: 4px;
+  width: 32px; height: 3px;
   background: rgba(255,255,255,.12);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   flex-shrink: 0;
+}
+.sheet-title {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--t3);
 }
 .sheet-actions { display: flex; align-items: center; gap: 8px; }
 
@@ -429,7 +485,7 @@ html, body {
   padding: 4px 12px;
   background: rgba(74,222,128,.1);
   border: 1px solid rgba(74,222,128,.28);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   color: var(--green);
   cursor: pointer;
   font-family: var(--f);
@@ -438,7 +494,6 @@ html, body {
 }
 .btn-export:hover { background: rgba(74,222,128,.2); box-shadow: 0 0 14px rgba(74,222,128,.15); }
 
-/* scrollable content inside sheet */
 .sheet-scroll {
   flex: 1;
   overflow-y: auto;
@@ -455,33 +510,18 @@ html, body {
 /* ============================================================
    RESULTS CONTENT
    ============================================================ */
-.summary {
-  font-size: 12px;
-  color: var(--t2);
-  line-height: 1.75;
-}
+.summary { font-size: 12px; color: var(--t2); line-height: 1.75; }
 .summary p { margin-bottom: 2px; }
 .summary strong { color: var(--t1); }
 .placeholder { color: var(--t3); font-style: italic; }
 
-/* table */
-.table-wrap {
-  border: 1px solid var(--bdr);
-  border-radius: var(--r2);
-  overflow: hidden;
-}
-#resultsTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
+.table-wrap { border: 1px solid var(--bdr); border-radius: var(--r2); overflow: hidden; }
+#resultsTable { width: 100%; border-collapse: collapse; font-size: 12px; }
 #resultsTable thead th {
   padding: 7px 10px;
   text-align: left;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: .1em;
-  text-transform: uppercase;
+  font-size: 9.5px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
   color: var(--t3);
   background: rgba(3,9,18,.5);
   border-bottom: 1px solid var(--bdr);
@@ -497,19 +537,22 @@ html, body {
 #resultsTable tbody tr:hover td { background: var(--hover); color: var(--t1); }
 #resultsTable tbody td:first-child { color: var(--t1); font-weight: 500; }
 
-/* chart */
-.chart-area { min-height: 180px; }
-#resultsChart { width: 100% !important; min-height: 200px; }
+/* ============================================================
+   CHART
+   ============================================================ */
+.chart-area { min-height: 260px; }
+#resultsChart { width: 100% !important; min-height: 260px; }
 
-/* chart mode toggle (injected by charts.js) */
+/* Chart mode toggle (injected by charts.js) */
 #chart-mode-toggle {
   display: flex !important;
-  gap: 5px !important;
+  gap: 4px !important;
   margin-bottom: 10px !important;
   flex-wrap: wrap !important;
 }
 #chart-mode-toggle button {
   flex: 1 !important;
+  min-width: 70px !important;
   padding: 5px 8px !important;
   border: 1px solid var(--bdr) !important;
   background: rgba(3,9,18,.7) !important;
@@ -524,11 +567,23 @@ html, body {
   border-color: rgba(56,189,248,.35) !important;
   color: var(--t1) !important;
 }
+#chart-mode-toggle button.active {
+  background: var(--c1-dim) !important;
+  border-color: var(--bdr2) !important;
+  color: var(--c1) !important;
+}
 
 /* ============================================================
-   MOBILE
+   RESPONSIVE
    ============================================================ */
-@media (max-width: 640px) {
-  :root { --card-w: calc(100vw - 24px); --sheet-h: 68vh; }
+@media (max-width: 600px) {
+  :root {
+    --card-w: calc(100vw - 24px);
+    --sheet-h: 70vh;
+  }
+  :root { --card-left: 12px; }
   #controlCard { left: 12px; right: 12px; width: auto; }
+  #mapSwitcher { left: 12px; right: 12px; justify-content: space-between; }
+  .map-btn { flex: 1; text-align: center; padding: 5px 8px; font-size: 11px; }
+  .leaflet-top.leaflet-left { left: 12px !important; }
 }

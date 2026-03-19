@@ -6,422 +6,421 @@ window.ClimateApp = window.ClimateApp || {};
 ClimateApp.charts = (function () {
 
   let chartInstance = null;
-  let currentChartMode = 'aggregate'; // 'aggregate', 'monthly', 'comparison'
-  let currentChartData = null; // Store data for mode switching
+  let currentChartMode = 'climatogram';
+  let currentChartData = null;
 
-  /**
-   * Vyrenderuje line chart pro klimatický index.
-   */
-  function renderResultsChart(canvasEl, results, indicatorKey, unitName, indicatorLabel) {
-    if (!canvasEl) return;
+  const MONTH_LABELS = ['Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čer', 'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro'];
 
-    // Store data for mode switching
-    currentChartData = { canvasEl, results, indicatorKey, unitName, indicatorLabel };
+  const PALETTE = {
+    old:    { line: 'rgba(59, 130, 246, 1)',   fill: 'rgba(59, 130, 246, 0.15)',  bar: 'rgba(59, 130, 246, 0.4)'  },
+    new:    { line: 'rgba(16, 185, 129, 1)',   fill: 'rgba(16, 185, 129, 0.15)',  bar: 'rgba(16, 185, 129, 0.4)'  },
+    future: { line: 'rgba(239, 68, 68, 1)',    fill: 'rgba(239, 68, 68, 0.15)',   bar: 'rgba(239, 68, 68, 0.4)'   },
+  };
 
-    // Check if there is any valid data to display
-    const hasValidData = results.some(r => r.index != null && !isNaN(r.index));
-    if (!hasValidData) {
-      canvasEl.style.display = "none";
-      return;
-    }
+  const GRID  = 'rgba(148, 163, 184, 0.15)';
+  const TICK  = '#94a3b8';
+  const TITLE_COLOR = '#e5e7eb';
 
-    canvasEl.style.display = "block";
-
-    // Create toggle controls if they don't exist
-    createChartToggle(canvasEl);
-
-    // Render based on current mode
-    renderChartByMode();
+  function baseScaleY(title, position = 'left') {
+    return {
+      type: 'linear',
+      position,
+      title: { display: true, text: title, color: TITLE_COLOR, font: { size: 11 } },
+      ticks: { color: TICK },
+      grid: { color: position === 'left' ? GRID : 'transparent' },
+    };
   }
 
-  /**
-   * Create toggle controls for switching chart modes
-   */
-  function createChartToggle(canvasEl) {
-    const existingToggle = document.getElementById('chart-mode-toggle');
-    if (existingToggle) return; // Already exists
+  function baseScaleX() {
+    return {
+      ticks: { color: TICK },
+      grid: { color: GRID },
+    };
+  }
 
-    const toggleContainer = document.createElement('div');
-    toggleContainer.id = 'chart-mode-toggle';
-    toggleContainer.style.cssText = 'display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;';
+  function baseOptions(titleText) {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        title: { display: true, text: titleText, color: TITLE_COLOR, font: { size: 15 } },
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color: TITLE_COLOR, usePointStyle: true, padding: 14, font: { size: 11 } },
+        },
+      },
+    };
+  }
 
-    const modes = [
-      { id: 'aggregate', label: 'Aggregated Values', icon: '📊' },
-      { id: 'monthly', label: 'Monthly Temperatures', icon: '📅' },
-      { id: 'comparison', label: 'Compare Normals', icon: '🔄' }
-    ];
+  // ============================================================
+  //   Klimatogram (Walter-Lieth style) — T lines + SRA bars
+  // ============================================================
+  function renderClimatogramChart(canvasEl, results, unitName) {
+    const ctx = canvasEl.getContext('2d');
+    const datasets = [];
 
-    modes.forEach(mode => {
-      const btn = document.createElement('button');
-      btn.textContent = `${mode.icon} ${mode.label}`;
-      btn.style.cssText = `
-        padding: 0.5rem 1rem;
-        border: 1px solid rgba(148, 163, 184, 0.4);
-        background: ${currentChartMode === mode.id ? 'rgba(56, 189, 248, 0.2)' : 'rgba(30, 41, 59, 0.5)'};
-        color: #e5e7eb;
-        border-radius: 0.375rem;
-        cursor: pointer;
-        font-size: 0.875rem;
-        transition: all 0.2s;
-      `;
+    results.forEach(r => {
+      const c = PALETTE[r.key] || PALETTE.new;
 
-      btn.addEventListener('click', () => {
-        currentChartMode = mode.id;
-        // Update all button styles
-        toggleContainer.querySelectorAll('button').forEach((b, i) => {
-          b.style.background = i === modes.findIndex(m => m.id === mode.id)
-            ? 'rgba(56, 189, 248, 0.2)'
-            : 'rgba(30, 41, 59, 0.5)';
+      // Precipitation bars (yPrecip axis)
+      if (r.monthlySRA && r.monthlySRA.length === 12) {
+        datasets.push({
+          type: 'bar',
+          label: `${r.label} — Srážky`,
+          data: r.monthlySRA.map(v => v != null ? +v.toFixed(1) : null),
+          backgroundColor: c.bar,
+          borderColor: c.line,
+          borderWidth: 1,
+          yAxisID: 'yPrecip',
+          order: 2,
         });
-        renderChartByMode();
-      });
+      }
 
-      btn.addEventListener('mouseenter', () => {
-        if (currentChartMode !== mode.id) {
-          btn.style.background = 'rgba(56, 189, 248, 0.1)';
-        }
-      });
-
-      btn.addEventListener('mouseleave', () => {
-        if (currentChartMode !== mode.id) {
-          btn.style.background = 'rgba(30, 41, 59, 0.5)';
-        }
-      });
-
-      toggleContainer.appendChild(btn);
+      // Temperature line (yTemp axis)
+      if (r.monthlyTemps && r.monthlyTemps.length === 12) {
+        datasets.push({
+          type: 'line',
+          label: `${r.label} — T`,
+          data: r.monthlyTemps.map(v => v != null ? +v.toFixed(1) : null),
+          borderColor: c.line,
+          backgroundColor: c.fill,
+          fill: false,
+          borderWidth: 2.5,
+          tension: 0.4,
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          yAxisID: 'yTemp',
+          order: 1,
+        });
+      }
     });
 
-    // Insert toggle before canvas
-    canvasEl.parentNode.insertBefore(toggleContainer, canvasEl);
+    if (datasets.length === 0) return;
+
+    const opts = baseOptions(`Klimatogram — ${unitName}`);
+    opts.plugins.tooltip = {
+      callbacks: {
+        label: ctx => {
+          const v = ctx.parsed.y;
+          if (v == null) return null;
+          const isTemp = ctx.dataset.yAxisID === 'yTemp';
+          return `${ctx.dataset.label}: ${v.toFixed(1)}${isTemp ? ' °C' : ' mm'}`;
+        },
+      },
+    };
+    opts.scales = {
+      yTemp: { ...baseScaleY('Teplota (°C)', 'left'), ticks: { color: TICK, callback: v => v.toFixed(0) + '°C' } },
+      yPrecip: { ...baseScaleY('Srážky (mm)', 'right'), grid: { display: false }, ticks: { color: TICK, callback: v => v.toFixed(0) + ' mm' } },
+      x: { ...baseScaleX(), labels: MONTH_LABELS },
+    };
+
+    chartInstance = new Chart(ctx, { type: 'bar', data: { labels: MONTH_LABELS, datasets }, options: opts });
   }
 
-  /**
-   * Render chart based on current mode
-   */
-  function renderChartByMode() {
-    if (!currentChartData) return;
+  // ============================================================
+  //   Měsíční teploty — vylepšená verze s fill oblastmi
+  // ============================================================
+  function renderMonthlyChart(canvasEl, results, unitName) {
+    const ctx = canvasEl.getContext('2d');
 
-    const { canvasEl, results, indicatorKey, unitName, indicatorLabel } = currentChartData;
+    const datasets = results
+      .filter(r => r.monthlyTemps && r.monthlyTemps.length === 12)
+      .map(r => {
+        const c = PALETTE[r.key] || PALETTE.new;
+        return {
+          label: r.label,
+          data: r.monthlyTemps.map(v => v != null ? +v.toFixed(1) : null),
+          borderColor: c.line,
+          backgroundColor: c.fill,
+          fill: 'origin',
+          borderWidth: 2,
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 7,
+        };
+      });
 
-    // Destroy old chart
-    if (chartInstance) {
-      chartInstance.destroy();
-      chartInstance = null;
-    }
+    if (datasets.length === 0) return;
 
-    switch (currentChartMode) {
-      case 'aggregate':
-        renderAggregateChart(canvasEl, results, indicatorKey, unitName, indicatorLabel);
-        break;
-      case 'monthly':
-        renderMonthlyChart(canvasEl, results, unitName);
-        break;
-      case 'comparison':
-        renderComparisonChart(canvasEl, results, indicatorKey, unitName, indicatorLabel);
-        break;
-    }
+    const allTemps = datasets.flatMap(d => d.data).filter(t => t != null);
+    const minT = Math.min(...allTemps);
+    const maxT = Math.max(...allTemps);
+    const pad  = (maxT - minT) * 0.12;
+
+    const opts = baseOptions(`Průměrné měsíční teploty — ${unitName}`);
+    opts.plugins.tooltip = {
+      callbacks: {
+        label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)} °C`,
+      },
+    };
+    opts.scales = {
+      y: {
+        ...baseScaleY('Teplota (°C)'),
+        suggestedMin: minT - pad,
+        suggestedMax: maxT + pad,
+        ticks: { color: TICK, callback: v => v.toFixed(0) + '°C' },
+      },
+      x: { ...baseScaleX(), title: { display: true, text: 'Měsíc', color: TITLE_COLOR } },
+    };
+
+    chartInstance = new Chart(ctx, { type: 'line', data: { labels: MONTH_LABELS, datasets }, options: opts });
   }
 
-  /**
-   * Render aggregate chart (original view)
-   */
+  // ============================================================
+  //   Srážky po měsících
+  // ============================================================
+  function renderMonthlyPrecipChart(canvasEl, results, unitName) {
+    const ctx = canvasEl.getContext('2d');
+
+    const datasets = results
+      .filter(r => r.monthlySRA && r.monthlySRA.length === 12)
+      .map(r => {
+        const c = PALETTE[r.key] || PALETTE.new;
+        return {
+          label: r.label,
+          data: r.monthlySRA.map(v => v != null ? +v.toFixed(1) : null),
+          backgroundColor: c.bar,
+          borderColor: c.line,
+          borderWidth: 1,
+        };
+      });
+
+    if (datasets.length === 0) return;
+
+    const opts = baseOptions(`Měsíční srážky — ${unitName}`);
+    opts.plugins.tooltip = {
+      callbacks: {
+        label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)} mm`,
+      },
+    };
+    opts.scales = {
+      y: {
+        ...baseScaleY('Srážky (mm)'),
+        beginAtZero: true,
+        ticks: { color: TICK, callback: v => v.toFixed(0) + ' mm' },
+      },
+      x: { ...baseScaleX(), title: { display: true, text: 'Měsíc', color: TITLE_COLOR } },
+    };
+
+    chartInstance = new Chart(ctx, { type: 'bar', data: { labels: MONTH_LABELS, datasets }, options: opts });
+  }
+
+  // ============================================================
+  //   Přehledový graf — index trend přes normály
+  // ============================================================
   function renderAggregateChart(canvasEl, results, indicatorKey, unitName, indicatorLabel) {
-    const labels = results.map((r) => r.label);
-    const nonNullIndexValues = results.map((r) =>
-      r.index != null && !isNaN(r.index) ? Number(r.index.toFixed(2)) : null
-    ).filter(value => value !== null);
+    const ctx = canvasEl.getContext('2d');
+    const labels = results.map(r => r.label);
 
-    const ctx = canvasEl.getContext("2d");
-    const chartTitle = `${indicatorLabel} Trends for ${unitName}`;
+    const indexVals = results.map(r => r.index != null && !isNaN(r.index) ? +r.index.toFixed(2) : null);
+    const Tvals     = results.map(r => r.T  != null ? +r.T.toFixed(2)  : null);
+    const Rvals     = results.map(r => r.R  != null ? +r.R.toFixed(1)  : null);
 
-    let minIndex = nonNullIndexValues.length > 0 ? Math.min(...nonNullIndexValues) : 0;
-    let maxIndex = nonNullIndexValues.length > 0 ? Math.max(...nonNullIndexValues) : 0;
-    const padding = (maxIndex - minIndex) * 0.1;
+    const nonNull = v => v.filter(x => x != null);
+    const yMin = Math.min(...nonNull(indexVals));
+    const yMax = Math.max(...nonNull(indexVals));
+    const pad  = (yMax - yMin) * 0.15 || 0.5;
 
-    let suggestedMin = minIndex - padding;
-    let suggestedMax = maxIndex + padding;
-
-    if (suggestedMin === suggestedMax) {
-      suggestedMin -= 0.5;
-      suggestedMax += 0.5;
-    }
+    const opts = baseOptions(`${indicatorLabel} — ${unitName}`);
+    opts.plugins.tooltip = {
+      callbacks: {
+        label: ctx => {
+          const v = ctx.parsed.y;
+          if (v == null) return null;
+          if (ctx.dataset.yAxisID === 'yR') return `Srážky: ${v.toFixed(0)} mm`;
+          if (ctx.dataset.label === 'Teplota') return `Teplota: ${v.toFixed(1)} °C`;
+          return `${indicatorLabel}: ${v.toFixed(2)}`;
+        },
+      },
+    };
+    opts.scales = {
+      y: {
+        ...baseScaleY(indicatorLabel),
+        suggestedMin: yMin - pad,
+        suggestedMax: yMax + pad,
+        ticks: { color: TICK, callback: v => v.toFixed(2) },
+      },
+      yR: {
+        ...baseScaleY('Srážky (mm)', 'right'),
+        grid: { display: false },
+        ticks: { color: TICK, callback: v => v.toFixed(0) + ' mm' },
+      },
+      x: baseScaleX(),
+    };
 
     chartInstance = new Chart(ctx, {
-      type: "line",
+      type: 'line',
       data: {
         labels,
         datasets: [
           {
             label: indicatorLabel,
-            data: results.map((r) =>
-              r.index != null && !isNaN(r.index) ? Number(r.index.toFixed(2)) : null
-            ),
+            data: indexVals,
             borderColor: 'rgba(56, 189, 248, 1)',
-            borderWidth: 2,
-            tension: 0.35,
+            backgroundColor: 'rgba(56, 189, 248, 0.12)',
+            fill: true,
+            borderWidth: 2.5,
+            tension: 0.3,
+            pointRadius: 5,
+            pointHoverRadius: 8,
+            yAxisID: 'y',
+          },
+          {
+            label: 'Teplota',
+            data: Tvals,
+            borderColor: 'rgba(251, 191, 36, 0.85)',
+            borderDash: [5, 3],
+            borderWidth: 1.5,
+            tension: 0.3,
+            pointRadius: 4,
             fill: false,
+            yAxisID: 'y',
+          },
+          {
+            label: 'Srážky',
+            type: 'bar',
+            data: Rvals,
+            backgroundColor: 'rgba(99, 179, 237, 0.25)',
+            borderColor: 'rgba(99, 179, 237, 0.6)',
+            borderWidth: 1,
+            yAxisID: 'yR',
           },
         ],
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          title: {
-            display: true,
-            text: chartTitle,
-            color: '#e5e7eb',
-            font: { size: 16 },
-          },
-          tooltip: {
-            callbacks: {
-              label: function (context) {
-                const value = context.parsed.y != null ? context.parsed.y.toFixed(2) : 'N/A';
-                return `${indicatorLabel}: ${value}`;
-              },
-              title: function(context) {
-                return `Normal: ${context[0].label}`;
-              }
-            },
-          },
-          legend: {
-            display: true,
-            labels: {
-              filter: function(legendItem, chartData) {
-                return true;
-              }
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: false,
-            suggestedMin: suggestedMin,
-            suggestedMax: suggestedMax,
-            title: {
-              display: true,
-              text: indicatorLabel,
-              color: '#e5e7eb',
-            },
-            ticks: { color: '#e5e7eb' },
-            grid: {
-              color: 'rgba(148, 163, 184, 0.2)',
-              borderColor: 'rgba(148, 163, 184, 0.4)'
-            }
-          },
-          x: {
-            ticks: {
-              color: '#e5e7eb',
-              maxRotation: 0,
-              minRotation: 0,
-            },
-            grid: {
-              color: 'rgba(148, 163, 184, 0.2)',
-              borderColor: 'rgba(148, 163, 184, 0.4)'
-            }
-          },
-        },
-      },
+      options: opts,
     });
   }
 
-  /**
-   * Render monthly temperature chart (12 points per normal)
-   */
-  function renderMonthlyChart(canvasEl, results, unitName) {
-    const ctx = canvasEl.getContext("2d");
-    const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  // ============================================================
+  //   Porovnání normálů — delta od starého normálu
+  // ============================================================
+  function renderComparisonChart(canvasEl, results, indicatorKey, unitName, indicatorLabel) {
+    const ctx = canvasEl.getContext('2d');
+    const old = results.find(r => r.key === 'old');
 
-    const colors = {
-      'old': 'rgba(59, 130, 246, 1)',     // Blue
-      'new': 'rgba(16, 185, 129, 1)',     // Green
-      'future': 'rgba(239, 68, 68, 1)'    // Red
-    };
-
-    const datasets = results
-      .filter(r => r.monthlyTemps && Array.isArray(r.monthlyTemps))
-      .map(r => ({
-        label: r.label,
-        data: r.monthlyTemps,
-        borderColor: colors[r.key] || 'rgba(148, 163, 184, 1)',
-        backgroundColor: colors[r.key] || 'rgba(148, 163, 184, 0.5)',
-        borderWidth: 2,
-        tension: 0.4,
-        fill: false,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-      }));
-
-    if (datasets.length === 0) {
-      console.warn('No monthly temperature data available');
+    if (!old) {
+      renderAggregateChart(canvasEl, results, indicatorKey, unitName, indicatorLabel);
       return;
     }
 
-    // Calculate min/max for all monthly temps
-    const allTemps = datasets.flatMap(d => d.data).filter(t => t != null);
-    const minTemp = Math.min(...allTemps);
-    const maxTemp = Math.max(...allTemps);
-    const padding = (maxTemp - minTemp) * 0.1;
+    const compared = results.filter(r => r.key !== 'old');
+    if (compared.length === 0) return;
 
-    chartInstance = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: monthLabels,
-        datasets: datasets,
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          title: {
-            display: true,
-            text: `Monthly Average Temperatures - ${unitName}`,
-            color: '#e5e7eb',
-            font: { size: 16 },
-          },
-          tooltip: {
-            callbacks: {
-              label: function (context) {
-                const value = context.parsed.y != null ? context.parsed.y.toFixed(1) : 'N/A';
-                return `${context.dataset.label}: ${value}°C`;
-              },
-            },
-          },
-          legend: {
-            display: true,
-            position: 'top',
-            labels: {
-              color: '#e5e7eb',
-              usePointStyle: true,
-              padding: 15,
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: false,
-            suggestedMin: minTemp - padding,
-            suggestedMax: maxTemp + padding,
-            title: {
-              display: true,
-              text: 'Temperature (°C)',
-              color: '#e5e7eb',
-            },
-            ticks: {
-              color: '#e5e7eb',
-              callback: function(value) {
-                return value.toFixed(1) + '°C';
-              }
-            },
-            grid: {
-              color: 'rgba(148, 163, 184, 0.2)',
-              borderColor: 'rgba(148, 163, 184, 0.4)'
-            }
-          },
-          x: {
-            title: {
-              display: true,
-              text: 'Month',
-              color: '#e5e7eb',
-            },
-            ticks: { color: '#e5e7eb' },
-            grid: {
-              color: 'rgba(148, 163, 184, 0.2)',
-              borderColor: 'rgba(148, 163, 184, 0.4)'
-            }
-          },
-        },
-      },
+    const metrics = ['ΔT (°C)', 'ΔSrážky (mm)', `Δ${indicatorLabel}`];
+    const datasets = compared.map(r => {
+      const c = PALETTE[r.key] || PALETTE.new;
+      return {
+        label: `${r.label} vs. Starý normál`,
+        data: [
+          r.T  != null && old.T  != null ? +(r.T  - old.T).toFixed(2)  : null,
+          r.R  != null && old.R  != null ? +(r.R  - old.R).toFixed(1)  : null,
+          r.index != null && old.index != null ? +(r.index - old.index).toFixed(3) : null,
+        ],
+        backgroundColor: c.bar,
+        borderColor: c.line,
+        borderWidth: 2,
+      };
     });
-  }
 
-  /**
-   * Render comparison chart (all normals side by side)
-   */
-  function renderComparisonChart(canvasEl, results, indicatorKey, unitName, indicatorLabel) {
-    const ctx = canvasEl.getContext("2d");
+    const allVals = datasets.flatMap(d => d.data).filter(v => v != null);
+    const absMax  = Math.max(...allVals.map(Math.abs), 0.1);
 
-    const colors = {
-      'old': 'rgba(59, 130, 246, 0.7)',
-      'new': 'rgba(16, 185, 129, 0.7)',
-      'future': 'rgba(239, 68, 68, 0.7)'
+    const opts = baseOptions(`Změny oproti starému normálu — ${unitName}`);
+    opts.plugins.tooltip = {
+      callbacks: {
+        label: ctx => {
+          const v = ctx.parsed.y;
+          if (v == null) return null;
+          const sign = v >= 0 ? '+' : '';
+          return `${ctx.dataset.label}: ${sign}${v}`;
+        },
+      },
+    };
+    opts.scales = {
+      y: {
+        ...baseScaleY('Změna (Δ)'),
+        suggestedMin: -absMax * 1.2,
+        suggestedMax:  absMax * 1.2,
+        ticks: { color: TICK, callback: v => (v >= 0 ? '+' : '') + v.toFixed(2) },
+        grid: { color: GRID },
+      },
+      x: baseScaleX(),
     };
 
-    // Prepare data for grouped bar chart
-    const metrics = ['Temperature (°C)', 'Precipitation (mm)', indicatorLabel];
+    // Zero line plugin
+    opts.plugins.annotation = undefined; // no annotation plugin needed — zero visible via grid
 
-    const datasets = results.map(r => ({
-      label: r.label,
-      data: [
-        r.T != null ? r.T : null,
-        r.R != null ? r.R : null,
-        r.index != null ? r.index : null
-      ],
-      backgroundColor: colors[r.key] || 'rgba(148, 163, 184, 0.7)',
-      borderColor: colors[r.key]?.replace('0.7', '1') || 'rgba(148, 163, 184, 1)',
-      borderWidth: 1,
-    }));
-
-    chartInstance = new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels: metrics,
-        datasets: datasets,
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          title: {
-            display: true,
-            text: `Climate Normals Comparison - ${unitName}`,
-            color: '#e5e7eb',
-            font: { size: 16 },
-          },
-          tooltip: {
-            callbacks: {
-              label: function (context) {
-                const value = context.parsed.y != null ? context.parsed.y.toFixed(2) : 'N/A';
-                return `${context.dataset.label}: ${value}`;
-              },
-            },
-          },
-          legend: {
-            display: true,
-            position: 'top',
-            labels: {
-              color: '#e5e7eb',
-              padding: 15,
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: false,
-            title: {
-              display: true,
-              text: 'Value',
-              color: '#e5e7eb',
-            },
-            ticks: { color: '#e5e7eb' },
-            grid: {
-              color: 'rgba(148, 163, 184, 0.2)',
-              borderColor: 'rgba(148, 163, 184, 0.4)'
-            }
-          },
-          x: {
-            ticks: { color: '#e5e7eb' },
-            grid: {
-              color: 'rgba(148, 163, 184, 0.2)',
-              borderColor: 'rgba(148, 163, 184, 0.4)'
-            }
-          },
-        },
-      },
-    });
+    chartInstance = new Chart(ctx, { type: 'bar', data: { labels: metrics, datasets }, options: opts });
   }
 
-  return {
-    renderResultsChart,
-  };
+  // ============================================================
+  //   Přepínač módů
+  // ============================================================
+  function createChartToggle(canvasEl) {
+    if (document.getElementById('chart-mode-toggle')) return;
+
+    const container = document.createElement('div');
+    container.id = 'chart-mode-toggle';
+
+    const modes = [
+      { id: 'climatogram', label: 'Klimatogram' },
+      { id: 'monthly',     label: 'Teploty' },
+      { id: 'precipitation', label: 'Srážky' },
+      { id: 'aggregate',   label: 'Index' },
+      { id: 'comparison',  label: 'Δ Změny' },
+    ];
+
+    modes.forEach(mode => {
+      const btn = document.createElement('button');
+      btn.textContent = mode.label;
+      btn.dataset.mode = mode.id;
+      if (mode.id === currentChartMode) btn.classList.add('active');
+
+      btn.addEventListener('click', () => {
+        currentChartMode = mode.id;
+        container.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.mode === mode.id));
+        renderChartByMode();
+      });
+
+      container.appendChild(btn);
+    });
+
+    canvasEl.parentNode.insertBefore(container, canvasEl);
+  }
+
+  function renderChartByMode() {
+    if (!currentChartData) return;
+    const { canvasEl, results, indicatorKey, unitName, indicatorLabel } = currentChartData;
+
+    if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+
+    switch (currentChartMode) {
+      case 'climatogram':   renderClimatogramChart(canvasEl, results, unitName); break;
+      case 'monthly':       renderMonthlyChart(canvasEl, results, unitName); break;
+      case 'precipitation': renderMonthlyPrecipChart(canvasEl, results, unitName); break;
+      case 'aggregate':     renderAggregateChart(canvasEl, results, indicatorKey, unitName, indicatorLabel); break;
+      case 'comparison':    renderComparisonChart(canvasEl, results, indicatorKey, unitName, indicatorLabel); break;
+    }
+  }
+
+  // ============================================================
+  //   Public API
+  // ============================================================
+  function renderResultsChart(canvasEl, results, indicatorKey, unitName, indicatorLabel) {
+    if (!canvasEl) return;
+
+    currentChartData = { canvasEl, results, indicatorKey, unitName, indicatorLabel };
+
+    const hasData = results.some(r => r.index != null && !isNaN(r.index));
+    if (!hasData) { canvasEl.style.display = 'none'; return; }
+
+    canvasEl.style.display = 'block';
+    createChartToggle(canvasEl);
+    renderChartByMode();
+  }
+
+  return { renderResultsChart };
+
 })();

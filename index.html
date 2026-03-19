@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="cs">
 <head>
   <meta charset="UTF-8">
   <title>GEOTE Climate</title>
@@ -19,14 +19,17 @@
 <div id="app">
 
   <!-- Full-screen map -->
-  <div id="mapContainer"><div id="map"></div></div>
+  <div id="map"></div>
 
-  <!-- Top bar -->
+  <!-- ── TOP BAR ─────────────────────────────────────── -->
   <header id="topBar">
     <div class="brand">
       <svg class="brand-icon" viewBox="0 0 24 24" fill="none">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="url(#g)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <defs><linearGradient id="g" x1="2" y1="2" x2="22" y2="22"><stop stop-color="#38bdf8"/><stop offset="1" stop-color="#818cf8"/></linearGradient></defs>
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+              stroke="url(#g)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <defs><linearGradient id="g" x1="2" y1="2" x2="22" y2="22">
+          <stop stop-color="#38bdf8"/><stop offset="1" stop-color="#818cf8"/>
+        </linearGradient></defs>
       </svg>
       <div class="brand-text">
         <span class="brand-name">GEOTE Climate</span>
@@ -41,37 +44,45 @@
     </div>
   </header>
 
-  <!-- Floating control card -->
+  <!-- ── MAP TYPE SWITCHER ────────────────────────────── -->
+  <div id="mapSwitcher">
+    <button class="map-btn active" data-layer="dark">Mapa</button>
+    <button class="map-btn" data-layer="osm">OSM</button>
+    <button class="map-btn" data-layer="ortofoto">Letecká</button>
+    <button class="map-btn" data-layer="katastr">Katastr</button>
+  </div>
+
+  <!-- ── CONTROL CARD ──────────────────────────────────── -->
   <div id="controlCard">
     <div class="card-header">
-      <span class="card-title">Controls</span>
-      <button id="collapseBtn" class="icon-btn" title="Collapse">−</button>
+      <span class="card-title">Klimatická analýza</span>
+      <button id="collapseBtn" class="icon-btn" title="Sbalit">−</button>
     </div>
 
     <div id="cardBody">
 
       <div class="field-group">
-        <label class="field-label">Unit Type</label>
+        <label class="field-label">Typ jednotky</label>
         <select id="unitTypeSelect" class="sel">
-          <option value="orp">ORP — Administrative</option>
-          <option value="chko" selected>CHKO — Protected Landscape</option>
-          <option value="custom">Custom Polygon</option>
+          <option value="orp">ORP — Správní obvod</option>
+          <option value="chko" selected>CHKO — Chráněná krajina</option>
+          <option value="custom">Vlastní polygon</option>
         </select>
       </div>
 
       <div id="unitSelectWrapper" class="field-group">
-        <label class="field-label">Select Unit</label>
+        <label class="field-label">Vybrat jednotku</label>
         <select id="unitSelect" multiple size="6" class="sel unit-list">
-          <option value="">Loading…</option>
+          <option value="">Načítám…</option>
         </select>
       </div>
 
       <p id="customPolygonHint" class="hint" style="display:none">
-        Use the drawing tool on the map to define a polygon.
+        Nakreslete polygon pomocí kreslicího nástroje na mapě.
       </p>
 
       <div id="geojsonUploadWrapper" style="display:none" class="field-group">
-        <label class="field-label">Upload GeoJSON / S-JTSK</label>
+        <label class="field-label">Nahrát GeoJSON / S-JTSK</label>
         <input type="file" id="geojsonUpload" accept=".geojson,.json" class="file-input"/>
       </div>
 
@@ -79,49 +90,50 @@
         <label class="toggle-row">
           <input type="checkbox" id="multiSelectMode"/>
           <span class="track"></span>
-          <span class="toggle-label-text">Multi-select</span>
+          <span class="toggle-label-text">Multi-výběr</span>
         </label>
-        <span id="selectionCount" class="badge" style="display:none">0 selected</span>
+        <span id="selectionCount" class="badge" style="display:none">0 vybráno</span>
       </div>
 
       <div class="divider"></div>
 
       <div class="field-group">
-        <label class="field-label">Reference Normal</label>
+        <label class="field-label">Referenční normál</label>
         <select id="normalSelect" class="sel">
-          <option value="old">Old Normal (pre-1991)</option>
-          <option value="new">New Normal (1991–2020)</option>
-          <option value="future">Prediction 2050</option>
+          <option value="old">Starý normál (před 1991)</option>
+          <option value="new">Nový normál (1991–2020)</option>
+          <option value="future">Predikce 2050</option>
         </select>
       </div>
 
       <div class="field-group">
-        <label class="field-label">Climate Indicator</label>
+        <label class="field-label">Klimatický ukazatel</label>
         <select id="indicatorSelect" class="sel">
-          <option value="demartonne">De Martonne Aridity Index</option>
-          <option value="pet">Potential Evapotranspiration</option>
+          <option value="demartonne">De Martonne index aridiy</option>
+          <option value="pet">Potenciální evapotranspirace</option>
         </select>
       </div>
 
       <button id="computeBtn" class="btn-calc">
         <span class="btn-icon">⟳</span>
-        <span>Calculate</span>
+        <span>Vypočítat</span>
       </button>
       <button id="computeAllBtn" class="btn-calc" style="display:none">
         <span class="btn-icon">⟳</span>
-        <span>Calculate All</span>
+        <span>Vypočítat vše</span>
       </button>
 
       <div id="statusMessage" class="status-msg"></div>
-      <div id="stopwatch" class="stopwatch-text">Calculation time: 0.00 s</div>
+      <div id="stopwatch" class="stopwatch-text">Čas výpočtu: 0.00 s</div>
 
     </div>
   </div>
 
-  <!-- Results bottom sheet -->
+  <!-- ── RESULTS BOTTOM SHEET ──────────────────────────── -->
   <div id="resultsSheet">
     <div class="sheet-bar">
       <div class="sheet-handle"></div>
+      <div class="sheet-title" id="sheetTitle">Výsledky</div>
       <div class="sheet-actions">
         <button id="exportGeoBtn" class="btn-export" style="display:none">↓ Export GeoJSON</button>
         <button id="closeSheetBtn" class="icon-btn">✕</button>
@@ -130,13 +142,13 @@
 
     <div class="sheet-scroll">
       <div id="resultsSummary" class="summary">
-        <p class="placeholder">Select a unit and calculate to see results.</p>
+        <p class="placeholder">Vyberte jednotku a spusťte výpočet.</p>
       </div>
 
       <div class="table-wrap">
         <table id="resultsTable">
           <thead>
-            <tr><th>Normal</th><th>T °C</th><th>R mm</th><th>Index</th></tr>
+            <tr><th>Normál</th><th>T °C</th><th>R mm</th><th>Index</th></tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -151,7 +163,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
-<script src="./js/config.production.js"></script>
+<script src="./js/config.js"></script>
 <script src="./js/api.js"></script>
 <script src="./js/compute.js"></script>
 <script src="./js/charts.js"></script>
@@ -159,7 +171,7 @@
 <script src="./js/ui.js"></script>
 
 <script>
-  // Collapse/expand control card
+  // Collapse / expand control card
   const card = document.getElementById('controlCard');
   const body = document.getElementById('cardBody');
   const btn  = document.getElementById('collapseBtn');
@@ -173,7 +185,7 @@
     document.getElementById('resultsSheet').classList.remove('open');
   });
 
-  // Open results sheet when results are populated
+  // Auto-open results sheet when data arrives
   const observer = new MutationObserver(() => {
     const summary = document.getElementById('resultsSummary');
     if (!summary.querySelector('.placeholder')) {

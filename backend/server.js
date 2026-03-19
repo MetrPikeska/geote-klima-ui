@@ -11,16 +11,27 @@ const app = express();
 
 // CORS configuration - allow requests from your hosting domain
 const corsOptions = {
-  origin: [
-    'http://localhost:3000',      // Local development (serve)
-    'http://localhost:5500',      // Local development (Live Server)
-    'http://localhost',            // Local development
-    'http://127.0.0.1',           // Local development
-    'https://petrmikeska.cz',     // Your production domain
-    'http://petrmikeska.cz',      // HTTP fallback
-    'https://www.petrmikeska.cz', // WWW variant
-    'http://www.petrmikeska.cz'   // WWW HTTP fallback
-  ],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (curl, Postman)
+    if (!origin) return callback(null, true);
+    const allowed = [
+      'http://localhost:3000',
+      'http://localhost:5500',
+      'http://localhost:8080',
+      'http://127.0.0.1:8080',
+      'http://localhost',
+      'http://127.0.0.1',
+      'https://petrmikeska.cz',
+      'http://petrmikeska.cz',
+      'https://www.petrmikeska.cz',
+      'http://www.petrmikeska.cz',
+    ];
+    // Allow any trycloudflare.com subdomain (Quick Tunnels)
+    if (allowed.includes(origin) || /\.trycloudflare\.com$/.test(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error('CORS: origin not allowed: ' + origin));
+  },
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -94,30 +105,25 @@ async function saveToCache(geometryHash, unitType, unitId, normals, computationT
   const query = `
     INSERT INTO climate_results_cache (
       unit_type, unit_id, geometry_hash,
-      old_normal_t, old_normal_r, old_normal_temps,
-      new_normal_t, new_normal_r, new_normal_temps,
-      future_normal_t, future_normal_r, future_normal_temps,
+      old_normal_t, old_normal_r, old_normal_temps, old_normal_sra,
+      new_normal_t, new_normal_r, new_normal_temps, new_normal_sra,
+      future_normal_t, future_normal_r, future_normal_temps, future_normal_sra,
       computation_time_ms
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
     ON CONFLICT (geometry_hash) DO UPDATE SET
       computed_at = NOW(),
+      old_normal_sra = EXCLUDED.old_normal_sra,
+      new_normal_sra = EXCLUDED.new_normal_sra,
+      future_normal_sra = EXCLUDED.future_normal_sra,
       computation_time_ms = EXCLUDED.computation_time_ms
     RETURNING id
   `;
 
   const values = [
-    unitType,
-    unitId,
-    geometryHash,
-    normals[0].T,
-    normals[0].R,
-    JSON.stringify(normals[0].monthlyTemps),
-    normals[1].T,
-    normals[1].R,
-    JSON.stringify(normals[1].monthlyTemps),
-    normals[2].T,
-    normals[2].R,
-    JSON.stringify(normals[2].monthlyTemps),
+    unitType, unitId, geometryHash,
+    normals[0].T, normals[0].R, JSON.stringify(normals[0].monthlyTemps), JSON.stringify(normals[0].monthlySRA),
+    normals[1].T, normals[1].R, JSON.stringify(normals[1].monthlyTemps), JSON.stringify(normals[1].monthlySRA),
+    normals[2].T, normals[2].R, JSON.stringify(normals[2].monthlyTemps), JSON.stringify(normals[2].monthlySRA),
     computationTime
   ];
 
@@ -157,21 +163,24 @@ async function computeClimateForGeometry(geomOnly, label) {
             label: "Starý normál (<=1990)",
             T: cached.old_normal_t != null ? parseFloat(cached.old_normal_t) : null,
             R: cached.old_normal_r != null ? parseFloat(cached.old_normal_r) : null,
-            monthlyTemps: safeParse(cached.old_normal_temps)
+            monthlyTemps: safeParse(cached.old_normal_temps),
+            monthlySRA: safeParse(cached.old_normal_sra)
           },
           {
             key: "new",
             label: "Nový normál (1991–2020)",
             T: cached.new_normal_t != null ? parseFloat(cached.new_normal_t) : null,
             R: cached.new_normal_r != null ? parseFloat(cached.new_normal_r) : null,
-            monthlyTemps: safeParse(cached.new_normal_temps)
+            monthlyTemps: safeParse(cached.new_normal_temps),
+            monthlySRA: safeParse(cached.new_normal_sra)
           },
           {
             key: "future",
             label: "Predikce 2050 (>=2041)",
             T: cached.future_normal_t != null ? parseFloat(cached.future_normal_t) : null,
             R: cached.future_normal_r != null ? parseFloat(cached.future_normal_r) : null,
-            monthlyTemps: safeParse(cached.future_normal_temps)
+            monthlyTemps: safeParse(cached.future_normal_temps),
+            monthlySRA: safeParse(cached.future_normal_sra)
           }
         ],
         computationTimeMs: cached.computation_time_ms
@@ -227,9 +236,8 @@ async function computeClimateForGeometry(geomOnly, label) {
         (sra_m1 + sra_m2 + sra_m3 + sra_m4 + sra_m5 + sra_m6 +
          sra_m7 + sra_m8 + sra_m9 + sra_m10 + sra_m11 + sra_m12) AS sra_annual,
         weight,
-        ${Array.from({ length: 12 }, (_, i) =>
-          `tavg_m${i + 1}`
-        ).join(",")}
+        ${Array.from({ length: 12 }, (_, i) => `tavg_m${i + 1}`).join(",")},
+        ${Array.from({ length: 12 }, (_, i) => `sra_m${i + 1}`).join(",")}
       FROM weights
       ORDER BY year;
     `;
@@ -299,7 +307,12 @@ async function computeClimateForGeometry(geomOnly, label) {
         return yearRows.reduce((s, r) => s + (r[col] || 0) * (r.weight || 0), 0) / totalWeight;
       });
 
-      return { year: parseInt(year), T_year, R_year, monthlyTemps };
+      const monthlySRA = Array.from({ length: 12 }, (_, i) => {
+        const col = `sra_m${i + 1}`;
+        return yearRows.reduce((s, r) => s + (r[col] || 0) * (r.weight || 0), 0) / totalWeight;
+      });
+
+      return { year: parseInt(year), T_year, R_year, monthlyTemps, monthlySRA };
     });
 
     console.log('[COMPUTE DEBUG] Yearly aggregates:', yearlyAgg.map(y => ({
@@ -319,9 +332,9 @@ async function computeClimateForGeometry(geomOnly, label) {
     const avg = (arr, key) =>
       arr.length ? arr.reduce((s, item) => s + (item[key] || 0), 0) / arr.length : null;
 
-    const avgMonthly = (arr) =>
+    const avgMonthly = (arr, field) =>
       Array.from({ length: 12 }, (_, i) =>
-        arr.length ? arr.reduce((s, item) => s + (item.monthlyTemps[i] || 0), 0) / arr.length : null
+        arr.length ? arr.reduce((s, item) => s + ((item[field] && item[field][i]) || 0), 0) / arr.length : null
       );
 
     const normalsArray = [
@@ -330,21 +343,24 @@ async function computeClimateForGeometry(geomOnly, label) {
         label: "Starý normál (<=1990)",
         T: avg(normals.old, "T_year"),
         R: avg(normals.old, "R_year"),
-        monthlyTemps: avgMonthly(normals.old)
+        monthlyTemps: avgMonthly(normals.old, "monthlyTemps"),
+        monthlySRA: avgMonthly(normals.old, "monthlySRA")
       },
       {
         key: "new",
         label: "Nový normál (1991–2020)",
         T: avg(normals.new, "T_year"),
         R: avg(normals.new, "R_year"),
-        monthlyTemps: avgMonthly(normals.new)
+        monthlyTemps: avgMonthly(normals.new, "monthlyTemps"),
+        monthlySRA: avgMonthly(normals.new, "monthlySRA")
       },
       {
         key: "future",
         label: "Predikce 2050 (>=2041)",
         T: avg(normals.future, "T_year"),
         R: avg(normals.future, "R_year"),
-        monthlyTemps: avgMonthly(normals.future)
+        monthlyTemps: avgMonthly(normals.future, "monthlyTemps"),
+        monthlySRA: avgMonthly(normals.future, "monthlySRA")
       }
     ];
 
