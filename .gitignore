@@ -58,3 +58,17 @@ build/
 
 # Production config (contains live Cloudflare Tunnel URLs — generate with start-tunnels.sh)
 js/config.production.js
+
+# Database config (contains credentials)
+pg-featureserv/config/pg_featureserv.toml
+
+# Dev/debug scripts (may contain hardcoded credentials or IPs)
+backend/test-*.js
+backend/check-*.js
+backend/describe-*.js
+backend/query-*.js
+backend/server-original.js
+backend/server-batch.js
+backend/server-with-cache.js
+backend/.env.save
+docker-compose.yml

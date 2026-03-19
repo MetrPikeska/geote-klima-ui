@@ -5,6 +5,7 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const crypto = require("crypto");
+const rateLimit = require("express-rate-limit");
 const { pool } = require("./db");
 
 const app = express();
@@ -38,6 +39,16 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Rate limiting — max 30 výpočtů za minutu na IP
+const limiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests', message: 'Počkejte prosím chvíli.' },
+});
+app.use('/climate/polygon', limiter);
 
 // Increase JSON parsing limits for large geometries
 // IMPORTANT: Use extended: true for large URL-encoded data
