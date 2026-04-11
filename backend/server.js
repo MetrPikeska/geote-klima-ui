@@ -26,9 +26,15 @@ const corsOptions = {
       'http://petrmikeska.cz',
       'https://www.petrmikeska.cz',
       'http://www.petrmikeska.cz',
+      // Cloudflare Tunnel — trvalé subdomény
+      'https://api.petrmikeska.cz',
+      'https://backend.petrmikeska.cz',
+      'https://tiles.petrmikeska.cz',
     ];
-    // Allow any trycloudflare.com subdomain (Quick Tunnels)
-    if (allowed.includes(origin) || /\.trycloudflare\.com$/.test(origin)) {
+    // Allow any trycloudflare.com subdomain (Quick Tunnels) + *.petrmikeska.cz subdomains
+    if (allowed.includes(origin)
+      || /\.trycloudflare\.com$/.test(origin)
+      || /\.petrmikeska\.cz$/.test(origin)) {
       return callback(null, true);
     }
     callback(new Error('CORS: origin not allowed: ' + origin));

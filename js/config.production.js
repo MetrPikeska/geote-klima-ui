@@ -1,19 +1,19 @@
 // === config.production.js ===
-// Production configuration for deployment
-// Replace this with config.local.js for local development
+// Production configuration — Cloudflare Tunnel
+// Subdomény směřují na lokální server přes cloudflared tunel
 
 window.ClimateApp = window.ClimateApp || {};
 
 ClimateApp.config = {
-  // pg_featureserv na serveru (lokální IP)
-  BASE_API_URL: "http://192.168.34.4:9000",
+  // pg_featureserv (OGC API Features) přes Cloudflare Tunnel
+  BASE_API_URL: "https://api.petrmikeska.cz",
 
-  // Node.js backend na serveru
-  BACKEND_URL: "http://192.168.34.4:4000",
+  // Node.js backend přes Cloudflare Tunnel
+  BACKEND_URL: "https://backend.petrmikeska.cz",
 
-  // Tile server (pokud běží)
-  TILE_URL: "http://192.168.34.4:7800/public.climate_master_geom/{z}/{x}/{y}.png"
+  // Tile server přes Cloudflare Tunnel (pokud běží pg_tileserv)
+  TILE_URL: "https://tiles.petrmikeska.cz/public.climate_master_geom/{z}/{x}/{y}.png"
 };
 
-// Note: Tailscale IP 100.95.250.20 je přístupné jen v Tailscale síti
-// Pro veřejný přístup by musela být veřejná IP nebo domain
+// Cloudflare Tunnel config: ~/.cloudflared/config.yml na Ubuntu serveru
+// Systemd služba: sudo systemctl status cloudflared
