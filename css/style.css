@@ -1113,3 +1113,17 @@ html, body {
   .utype-grid { grid-template-columns: repeat(2, 1fr); }
   .metric-cards { grid-template-columns: 1fr; }
 }
+
+/* ── Map unit tooltip ───────────────────────────────────── */
+.unit-tooltip {
+  background: oklch(14.5% 0.022 255 / 92%);
+  border: 1px solid oklch(26% 0.022 255 / 70%);
+  color: oklch(93% 0.01 255);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px oklch(0% 0 0 / 40%);
+  white-space: nowrap;
+}
+.unit-tooltip::before { display: none; }

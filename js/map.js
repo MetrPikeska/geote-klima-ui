@@ -11,6 +11,8 @@ ClimateApp.map = (function () {
   let drawnItems;
   let drawControl;
   let unitLayer;
+  let allUnitsLayer = null;
+  let highlightedLeafletLayer = null;
   let activeLayerKey = 'dark';
 
   // === S-JTSK (EPSG:5514) definition ===
@@ -163,7 +165,66 @@ ClimateApp.map = (function () {
   }
 
   // ============================================================
-  //  Show ORP/CHKO geometry
+  //  Show all units as interactive layer
+  // ============================================================
+  function showAllUnits(units, onUnitClick) {
+    if (allUnitsLayer) { map.removeLayer(allUnitsLayer); allUnitsLayer = null; }
+    highlightedLeafletLayer = null;
+    if (!units || units.length === 0) return;
+
+    const STYLE_DEFAULT  = { color: '#38bdf8', weight: 1,   fillColor: '#38bdf8', fillOpacity: 0.07 };
+    const STYLE_HOVER    = { color: '#38bdf8', weight: 1.5, fillColor: '#38bdf8', fillOpacity: 0.22 };
+    const STYLE_SELECTED = { color: '#a78bfa', weight: 2.5, fillColor: '#a78bfa', fillOpacity: 0.30 };
+
+    const features = units.map(u => ({
+      type: 'Feature',
+      geometry: u.geom,
+      properties: { id: u.id, label: u.label },
+      _unit: u,
+    }));
+
+    allUnitsLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
+      style: STYLE_DEFAULT,
+      onEachFeature(feature, layer) {
+        layer._unit = feature._unit || units.find(u => String(u.id) === String(feature.properties.id));
+
+        layer.on({
+          mouseover(e) {
+            if (e.target !== highlightedLeafletLayer) e.target.setStyle(STYLE_HOVER);
+            e.target.bringToFront();
+          },
+          mouseout(e) {
+            if (e.target !== highlightedLeafletLayer) allUnitsLayer.resetStyle(e.target);
+          },
+          click(e) {
+            if (highlightedLeafletLayer) allUnitsLayer.resetStyle(highlightedLeafletLayer);
+            highlightedLeafletLayer = e.target;
+            e.target.setStyle(STYLE_SELECTED);
+            e.target.bringToFront();
+            if (onUnitClick && layer._unit) onUnitClick(layer._unit);
+          },
+        });
+
+        layer.bindTooltip(feature.properties.label, { sticky: true, className: 'unit-tooltip' });
+      },
+    }).addTo(map);
+  }
+
+  function highlightUnitOnMap(unitId) {
+    if (!allUnitsLayer) return;
+    const STYLE_SELECTED = { color: '#a78bfa', weight: 2.5, fillColor: '#a78bfa', fillOpacity: 0.30 };
+    allUnitsLayer.eachLayer(layer => {
+      if (layer._unit && String(layer._unit.id) === String(unitId)) {
+        if (highlightedLeafletLayer) allUnitsLayer.resetStyle(highlightedLeafletLayer);
+        highlightedLeafletLayer = layer;
+        layer.setStyle(STYLE_SELECTED);
+        layer.bringToFront();
+      }
+    });
+  }
+
+  // ============================================================
+  //  Show single unit geometry (legacy / fallback)
   // ============================================================
   function showUnitGeometry(geom) {
     if (unitLayer) { map.removeLayer(unitLayer); unitLayer = null; }
@@ -208,9 +269,11 @@ ClimateApp.map = (function () {
 
   function resetMapToDefault() {
     if (unitLayer) { map.removeLayer(unitLayer); unitLayer = null; }
+    if (allUnitsLayer) { map.removeLayer(allUnitsLayer); allUnitsLayer = null; }
+    highlightedLeafletLayer = null;
     map.setView([49.8, 15.5], 7);
   }
 
-  return { initMap, showUnitGeometry, resetMapToDefault, switchLayer };
+  return { initMap, showUnitGeometry, showAllUnits, highlightUnitOnMap, resetMapToDefault, switchLayer };
 
 })();

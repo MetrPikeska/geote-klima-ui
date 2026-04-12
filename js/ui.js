@@ -13,7 +13,7 @@ ClimateApp.state = {
   customPolygon: null,
   multiSelectMode: false,
   selectedIndices: new Set(),
-  activeUnitType: 'kraje',
+  activeUnitType: 'orp',
   activeIndicator: 'demartonne',
   activeNormal: 'new',
   loadedTypes: new Set(), // lazy-load tracking
@@ -44,7 +44,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Init ───────────────────────────────────────────────────────
   ClimateApp.map.initMap();
-  loadUnits('kraje'); // load initial type eagerly
+  loadUnits('orp'); // load ORP as default
+
+  // Mark ORP button as active on init
+  unitTypeGrid.querySelectorAll('.utype-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.type === 'orp');
+  });
 
   // ── Stopwatch ──────────────────────────────────────────────────
   function startStopwatch() {
@@ -74,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (type === 'custom') {
         unitSearchSec.style.display = 'none';
         customSection.style.display = '';
+        ClimateApp.map.showAllUnits([], null); // clear map layer
       } else {
         unitSearchSec.style.display = '';
         customSection.style.display = 'none';
@@ -82,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
           loadUnits(type);
         } else {
           populateUnitSelect(type);
+          ClimateApp.map.showAllUnits(ClimateApp.state.units[type], handleUnitClick);
         }
       }
     });
@@ -156,11 +163,18 @@ document.addEventListener('DOMContentLoaded', () => {
       setStatus('Vyberte jednotku nebo nakreslete polygon.');
       return;
     }
+    runComputation(selection);
+  });
 
+  async function runComputation(selection) {
     setStatus('Počítám…');
     computeBtn.classList.add('loading');
     computeBtn.disabled = true;
     startStopwatch();
+
+    // Open bottom sheet
+    const sheet = document.getElementById('resultsSheet');
+    if (sheet) sheet.classList.add('open');
 
     try {
       const climateData = await ClimateApp.api.fetchClimateForUnit(selection, dur => {
@@ -202,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
       computeBtn.classList.remove('loading');
       computeBtn.disabled = false;
     }
-  });
+  }
 
   // ── Batch calculation ──────────────────────────────────────────
   computeAllBtn.addEventListener('click', async () => {
@@ -254,12 +268,25 @@ document.addEventListener('DOMContentLoaded', () => {
       ClimateApp.state.loadedTypes.add(type);
       if (type === ClimateApp.state.activeUnitType) {
         populateUnitSelect(type);
+        ClimateApp.map.showAllUnits(units, handleUnitClick);
       }
       setStatus('');
     } catch (err) {
       console.error('loadUnits error:', err);
       setStatus(`Chyba načítání ${type}.`);
     }
+  }
+
+  function handleUnitClick(unit) {
+    // Highlight in dropdown
+    const type = ClimateApp.state.activeUnitType;
+    Array.from(unitSelect.options).forEach(opt => {
+      opt.selected = String(opt.value) === String(unit.id);
+    });
+
+    // Auto-run computation
+    const selection = { type, id: unit.id, label: unit.label, geometry: unit.geom };
+    runComputation(selection);
   }
 
   function populateUnitSelect(type) {
