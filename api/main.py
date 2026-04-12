@@ -249,17 +249,17 @@ async def compute_climate(pool, geom: dict, label: str | None) -> dict | None:
 
     yearly = []
     for year, yr_rows in by_year.items():
-        total_w = sum(r["weight"] or 0 for r in yr_rows)
+        total_w = sum(float(r["weight"] or 0) for r in yr_rows)
         if total_w == 0:
             continue
-        T_year = sum((r["tavg_avg"] or 0) * (r["weight"] or 0) for r in yr_rows) / total_w
-        R_year = sum((r["sra_annual"] or 0) * (r["weight"] or 0) for r in yr_rows) / total_w
+        T_year = sum(float(r["tavg_avg"] or 0) * float(r["weight"] or 0) for r in yr_rows) / total_w
+        R_year = sum(float(r["sra_annual"] or 0) * float(r["weight"] or 0) for r in yr_rows) / total_w
         mt = [
-            sum((r[f"tavg_m{i}"] or 0) * (r["weight"] or 0) for r in yr_rows) / total_w
+            sum(float(r[f"tavg_m{i}"] or 0) * float(r["weight"] or 0) for r in yr_rows) / total_w
             for i in range(1, 13)
         ]
         mr = [
-            sum((r[f"sra_m{i}"] or 0) * (r["weight"] or 0) for r in yr_rows) / total_w
+            sum(float(r[f"sra_m{i}"] or 0) * float(r["weight"] or 0) for r in yr_rows) / total_w
             for i in range(1, 13)
         ]
         yearly.append({"year": year, "T": T_year, "R": R_year, "mt": mt, "mr": mr})
