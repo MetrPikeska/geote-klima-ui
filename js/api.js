@@ -21,18 +21,35 @@ ClimateApp.api = (function () {
   async function fetchUnits(type) {
     let collectionId;
     let labelProp;
+    let limit = 500;
 
-    if (type === "orp") {
-      collectionId = "public.orp";
-      labelProp = "NAZ_ORP";
-    } else if (type === "chko") {
-      collectionId = "public.chko";
-      labelProp = "NAZEV";
-    } else {
-      return [];
+    switch (type) {
+      case "kraje":
+        collectionId = "public.kraje";
+        labelProp = "naz_cznuts3";
+        break;
+      case "okresy":
+        collectionId = "public.okresy";
+        labelProp = "nazev";
+        break;
+      case "orp":
+        collectionId = "public.orp";
+        labelProp = "NAZ_ORP";
+        break;
+      case "obce":
+        collectionId = "public.obce";
+        labelProp = "nazev";
+        limit = 7000;
+        break;
+      case "chko":
+        collectionId = "public.chko";
+        labelProp = "NAZEV";
+        break;
+      default:
+        return [];
     }
 
-    const url = `${ClimateApp.config.BASE_API_URL}/collections/${collectionId}/items?limit=500`;
+    const url = `${ClimateApp.config.BASE_API_URL}/collections/${collectionId}/items?limit=${limit}`;
 
     try {
       const res = await fetch(url);

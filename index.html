@@ -1,51 +1,12 @@
 <!DOCTYPE html>
-<!--
-  ================================================================
-  GEOTE Climate — Webová aplikace pro klimatickou analýzu ČR
-  ================================================================
-
-  PŘEDMĚT / COURSE:
-    Návrh a realizace uložení dat a dynamického výpočtu vybraných
-    klimatických ukazatelů pro prostorově definované územní jednotky
-    v prostředí prostorové geodatabáze
-
-  CÍL SEMESTRÁLNÍ PRÁCE:
-    Výpočet klimatických ukazatelů (De Martonne index aridiy,
-    Potenciální evapotranspirace dle Thornthwaita) pro:
-      a) ORP — správní obvody obcí s rozšířenou působností
-      b) CHKO — chráněné krajinné oblasti
-      c) Libovolný polygon kreslený uživatelem
-
-  KLIMATICKÉ NORMÁLY:
-    - Starý normál (≤ 1990)
-    - Nový normál (1991–2020)  ← hlavní referenční období
-    - Predikce 2050 (≥ 2041)
-
-  KLIMATICKÉ UKAZATELE:
-    1. De Martonne index aridiy: AI = R / (T + 10)
-       (R = roční srážky [mm], T = průměrná roční teplota [°C])
-    2. Potenciální evapotranspirace — Thornthwaitova metoda
-       (výpočet z měsíčních průměrných teplot)
-
-  TECHNICKÝ STACK:
-    - Frontend: Leaflet.js, Chart.js, Leaflet.draw, Proj4js
-    - Backend: Node.js / Express, PostgreSQL / PostGIS
-    - Geoprostorová data: pg-featureserv (OGC API Features)
-    - Deployment: Wedos hosting (static) + Cloudflare Tunnel
-    - Zdrojový kód: https://github.com/MetrPikeska/geote-klima-ui
-
-  AUTOR: Petr Mikeska
-  SEMESTR: Zimní semestr
-  ================================================================
--->
 <html lang="cs">
 <head>
   <meta charset="UTF-8">
-  <title>GEOTE Climate</title>
+  <title>GeoKlima — Klimatická analýza ČR</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
   <link rel="stylesheet" href="./css/style.css">
@@ -60,37 +21,7 @@
   <!-- Full-screen map -->
   <div id="map"></div>
 
-  <!-- ── TOP BAR ─────────────────────────────────────── -->
-  <header id="topBar">
-    <div class="brand">
-      <svg class="brand-icon" viewBox="0 0 24 24" fill="none">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-              stroke="url(#g)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <defs><linearGradient id="g" x1="2" y1="2" x2="22" y2="22">
-          <stop stop-color="#38bdf8"/><stop offset="1" stop-color="#818cf8"/>
-        </linearGradient></defs>
-      </svg>
-      <div class="brand-text">
-        <span class="brand-name">GEOTE Climate</span>
-        <span class="brand-sub">Czech Republic · Spatial Climate Analysis</span>
-      </div>
-    </div>
-    <div class="top-right">
-      <!-- GitHub odkaz na zdrojový kód semestrální práce -->
-      <a href="https://github.com/MetrPikeska/geote-klima-ui" target="_blank" rel="noopener"
-         class="github-link" title="Zdrojový kód na GitHubu">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-label="GitHub">
-          <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
-        </svg>
-      </a>
-      <div class="status-pill">
-        <span class="status-dot"></span>
-        <span>Connected</span>
-      </div>
-    </div>
-  </header>
-
-  <!-- ── MAP TYPE SWITCHER ────────────────────────────── -->
+  <!-- ── MAP TYPE SWITCHER ─────────────────────────────── -->
   <div id="mapSwitcher">
     <button class="map-btn active" data-layer="dark">Mapa</button>
     <button class="map-btn" data-layer="osm">OSM</button>
@@ -98,103 +29,285 @@
     <button class="map-btn" data-layer="katastr">Katastr</button>
   </div>
 
-  <!-- ── CONTROL CARD ──────────────────────────────────── -->
-  <div id="controlCard">
-    <div class="card-header">
-      <span class="card-title">Klimatická analýza</span>
-      <button id="collapseBtn" class="icon-btn" title="Sbalit">−</button>
-    </div>
+  <!-- ── LEFT SIDEBAR ──────────────────────────────────── -->
+  <aside id="sidebar">
+    <div id="sidebarInner">
 
-    <div id="cardBody">
-
-      <div class="field-group">
-        <label class="field-label">Typ jednotky</label>
-        <select id="unitTypeSelect" class="sel">
-          <option value="orp">ORP — Správní obvod</option>
-          <option value="chko" selected>CHKO — Chráněná krajina</option>
-          <option value="custom">Vlastní polygon</option>
-        </select>
+      <!-- Header -->
+      <div class="sidebar-head">
+        <div class="brand">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="brand-text">
+            <span class="brand-name">GeoKlima</span>
+            <span class="brand-sub">Klimatická analýza ČR</span>
+          </div>
+        </div>
+        <div class="head-actions">
+          <a href="https://github.com/MetrPikeska/geote-klima-ui" target="_blank" rel="noopener"
+             class="head-icon-btn" title="GitHub">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+            </svg>
+          </a>
+          <div class="conn-badge" id="connBadge" title="Stav spojení">
+            <span class="conn-dot"></span>
+          </div>
+          <button id="sidebarClose" class="head-icon-btn sidebar-close-btn" title="Zavřít panel">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M2 2l10 10M12 2L2 12"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
-      <div id="unitSelectWrapper" class="field-group">
-        <label class="field-label">Vybrat jednotku</label>
-        <select id="unitSelect" multiple size="6" class="sel unit-list">
-          <option value="">Načítám…</option>
-        </select>
+      <!-- Scrollable body -->
+      <div class="sidebar-body">
+
+        <!-- ── Územní jednotka ──────────────────────── -->
+        <div class="s-section">
+          <div class="s-label">Územní jednotka</div>
+          <div class="utype-grid" id="unitTypeGrid">
+
+            <button class="utype-btn active" data-type="kraje">
+              <svg class="utype-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4">
+                <polygon points="10,2 18,6.5 18,13.5 10,18 2,13.5 2,6.5"/>
+              </svg>
+              <span class="utype-name">Kraj</span>
+              <span class="utype-count">14</span>
+            </button>
+
+            <button class="utype-btn" data-type="okresy">
+              <svg class="utype-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4">
+                <rect x="3" y="3" width="14" height="14" rx="2"/>
+                <line x1="10" y1="3" x2="10" y2="17"/>
+                <line x1="3" y1="10" x2="17" y2="10"/>
+              </svg>
+              <span class="utype-name">Okres</span>
+              <span class="utype-count">77</span>
+            </button>
+
+            <button class="utype-btn" data-type="orp">
+              <svg class="utype-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4">
+                <rect x="2" y="2" width="7" height="7" rx="1.5"/>
+                <rect x="11" y="2" width="7" height="7" rx="1.5"/>
+                <rect x="2" y="11" width="7" height="7" rx="1.5"/>
+                <rect x="11" y="11" width="7" height="7" rx="1.5"/>
+              </svg>
+              <span class="utype-name">ORP</span>
+              <span class="utype-count">206</span>
+            </button>
+
+            <button class="utype-btn" data-type="obce">
+              <svg class="utype-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4">
+                <path d="M3 9.5L10 3l7 6.5V17H3z"/>
+                <rect x="8" y="13" width="4" height="4"/>
+              </svg>
+              <span class="utype-name">Obec</span>
+              <span class="utype-count">6258</span>
+            </button>
+
+            <button class="utype-btn" data-type="chko">
+              <svg class="utype-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4">
+                <path d="M10 17C10 17 3 13 3 8c0-3.866 3.134-7 7-7s7 3.134 7 7c0 5-7 9-7 9z"/>
+                <path d="M10 17V8"/>
+                <path d="M10 11l3-3"/>
+                <path d="M10 14l-3-3"/>
+              </svg>
+              <span class="utype-name">CHKO/NP</span>
+              <span class="utype-count">33</span>
+            </button>
+
+            <button class="utype-btn" data-type="custom">
+              <svg class="utype-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4">
+                <path d="M13.5 3.5l3 3L7 16H4v-3L13.5 3.5z"/>
+                <path d="M11.5 5.5l3 3"/>
+              </svg>
+              <span class="utype-name">Vlastní</span>
+              <span class="utype-count">—</span>
+            </button>
+
+          </div>
+        </div>
+
+        <!-- ── Unit search + list ───────────────────── -->
+        <div class="s-section" id="unitSearchSection">
+          <div class="s-label">Vybrat jednotku</div>
+          <div class="search-wrap">
+            <svg class="search-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="6.5" cy="6.5" r="4"/>
+              <path d="M10 10l3.5 3.5" stroke-linecap="round"/>
+            </svg>
+            <input type="text" id="unitSearch" class="search-input" placeholder="Hledat…" autocomplete="off" spellcheck="false"/>
+          </div>
+          <select id="unitSelect" multiple size="6" class="unit-list-sel">
+            <option value="" disabled>Načítám…</option>
+          </select>
+        </div>
+
+        <!-- ── Custom polygon section ──────────────── -->
+        <div class="s-section" id="customSection" style="display:none">
+          <div class="draw-hint">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4">
+              <polygon points="10,2 18,6.5 18,13.5 10,18 2,13.5 2,6.5" stroke-dasharray="3 2"/>
+            </svg>
+            <p>Nakreslete polygon nástrojem na mapě, nebo nahrajte GeoJSON soubor.</p>
+          </div>
+          <label class="file-upload-label" for="geojsonUpload">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M10 3v10M6 7l4-4 4 4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M3 15h14" stroke-linecap="round"/>
+            </svg>
+            <span>Nahrát GeoJSON / S-JTSK</span>
+            <input type="file" id="geojsonUpload" accept=".geojson,.json"/>
+          </label>
+        </div>
+
+        <!-- ── Multi-select toggle ─────────────────── -->
+        <div class="s-row" id="multiSelectRow">
+          <label class="toggle-row">
+            <input type="checkbox" id="multiSelectMode"/>
+            <span class="track"></span>
+            <span class="toggle-label-text">Multi-výběr</span>
+          </label>
+          <span id="selectionCount" class="count-badge" style="display:none">0 vybráno</span>
+        </div>
+
+        <div class="s-divider"></div>
+
+        <!-- ── Klimatický ukazatel ──────────────────── -->
+        <div class="s-section">
+          <div class="s-label">Klimatický ukazatel</div>
+          <div class="indicator-grid" id="indicatorGrid">
+
+            <button class="ind-btn active" data-key="demartonne" title="De Martonne index aridiy: AI = R / (T + 10)">
+              <span class="ind-name">De Martonne</span>
+              <span class="ind-unit">AI</span>
+            </button>
+
+            <button class="ind-btn" data-key="ldf" title="Langův dešťový faktor: LDF = R / T">
+              <span class="ind-name">Lang LDF</span>
+              <span class="ind-unit">—</span>
+            </button>
+
+            <button class="ind-btn" data-key="pet" title="Potenciální evapotranspirace — Thornthwaite">
+              <span class="ind-name">PET</span>
+              <span class="ind-unit">mm/r</span>
+            </button>
+
+            <button class="ind-btn" data-key="vpd" title="Vapor Pressure Deficit">
+              <span class="ind-name">VPD</span>
+              <span class="ind-unit">kPa</span>
+            </button>
+
+            <button class="ind-btn" data-key="mvj" title="Minářova vláhová jistota (veg. období 4–9)">
+              <span class="ind-name">MVJ</span>
+              <span class="ind-unit">%</span>
+            </button>
+
+            <button class="ind-btn" data-key="kiz" title="Končekův index zavlažení (léto 6–8)">
+              <span class="ind-name">KIZ</span>
+              <span class="ind-unit">mm</span>
+            </button>
+
+            <button class="ind-btn" data-key="deltasra" title="Rozdíl srážek mezi normálami (Δ mm / %)">
+              <span class="ind-name">Δ Srážky</span>
+              <span class="ind-unit">mm</span>
+            </button>
+
+            <button class="ind-btn" data-key="deltat" title="Rozdíl teplot mezi normálami (Δ °C)">
+              <span class="ind-name">Δ Teplota</span>
+              <span class="ind-unit">°C</span>
+            </button>
+
+          </div>
+        </div>
+
+        <!-- ── Klimatický normál ────────────────────── -->
+        <div class="s-section">
+          <div class="s-label">Klimatický normál</div>
+          <div class="normal-segs" id="normalSegs">
+            <button class="norm-btn" data-key="old">≤ 1990</button>
+            <button class="norm-btn active" data-key="new">1991–2020</button>
+            <button class="norm-btn" data-key="future">2050+</button>
+          </div>
+        </div>
+
+      </div><!-- /sidebar-body -->
+
+      <!-- Footer: status + compute -->
+      <div class="sidebar-foot">
+        <div class="status-area">
+          <div id="statusMessage" class="status-msg"></div>
+          <div id="stopwatch" class="stopwatch-text"></div>
+        </div>
+        <button id="computeBtn" class="btn-calc">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M10 3a7 7 0 0 1 7 7"/>
+            <path d="M3 10a7 7 0 0 0 7 7"/>
+            <path d="M10 3l-2 2 2 2"/>
+            <path d="M10 17l2-2-2-2"/>
+          </svg>
+          <span>Vypočítat</span>
+        </button>
+        <button id="computeAllBtn" class="btn-calc btn-calc--batch" style="display:none">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <rect x="2" y="2" width="7" height="7" rx="1"/>
+            <rect x="11" y="2" width="7" height="7" rx="1"/>
+            <rect x="2" y="11" width="7" height="7" rx="1"/>
+            <path d="M14.5 11v7M11 14.5h7"/>
+          </svg>
+          <span>Vypočítat vše</span>
+        </button>
       </div>
 
-      <p id="customPolygonHint" class="hint" style="display:none">
-        Nakreslete polygon pomocí kreslicího nástroje na mapě.
-      </p>
+    </div><!-- /sidebarInner -->
+  </aside>
 
-      <div id="geojsonUploadWrapper" style="display:none" class="field-group">
-        <label class="field-label">Nahrát GeoJSON / S-JTSK</label>
-        <input type="file" id="geojsonUpload" accept=".geojson,.json" class="file-input"/>
-      </div>
+  <!-- Mobile sidebar toggle -->
+  <button id="mobileSidebarBtn" class="mobile-sidebar-btn" aria-label="Otevřít panel">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <path d="M3 5h14M3 10h14M3 15h14"/>
+    </svg>
+  </button>
 
-      <div class="row-between">
-        <label class="toggle-row">
-          <input type="checkbox" id="multiSelectMode"/>
-          <span class="track"></span>
-          <span class="toggle-label-text">Multi-výběr</span>
-        </label>
-        <span id="selectionCount" class="badge" style="display:none">0 vybráno</span>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="field-group">
-        <label class="field-label">Referenční normál</label>
-        <select id="normalSelect" class="sel">
-          <option value="old">Starý normál (před 1991)</option>
-          <option value="new">Nový normál (1991–2020)</option>
-          <option value="future">Predikce 2050</option>
-        </select>
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">Klimatický ukazatel</label>
-        <select id="indicatorSelect" class="sel">
-          <option value="demartonne">De Martonne index aridiy</option>
-          <option value="pet">Potenciální evapotranspirace</option>
-        </select>
-      </div>
-
-      <button id="computeBtn" class="btn-calc">
-        <span class="btn-icon">⟳</span>
-        <span>Vypočítat</span>
-      </button>
-      <button id="computeAllBtn" class="btn-calc" style="display:none">
-        <span class="btn-icon">⟳</span>
-        <span>Vypočítat vše</span>
-      </button>
-
-      <div id="statusMessage" class="status-msg"></div>
-      <div id="stopwatch" class="stopwatch-text">Čas výpočtu: 0.00 s</div>
-
-    </div>
-  </div>
-
-  <!-- ── RESULTS BOTTOM SHEET ──────────────────────────── -->
+  <!-- ── RESULTS SHEET ─────────────────────────────────── -->
   <div id="resultsSheet">
     <div class="sheet-bar">
       <div class="sheet-handle"></div>
-      <div class="sheet-title" id="sheetTitle">Výsledky</div>
+      <div class="sheet-title" id="sheetTitle">Výsledky analýzy</div>
       <div class="sheet-actions">
-        <button id="exportGeoBtn" class="btn-export" style="display:none">↓ Export GeoJSON</button>
-        <button id="closeSheetBtn" class="icon-btn">✕</button>
+        <button id="exportGeoBtn" class="btn-export" style="display:none">
+          <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M10 3v10M6 9l4 4 4-4"/>
+            <path d="M3 15h14"/>
+          </svg>
+          GeoJSON
+        </button>
+        <button id="closeSheetBtn" class="icon-btn" title="Zavřít">
+          <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M2 2l10 10M12 2L2 12"/>
+          </svg>
+        </button>
       </div>
     </div>
 
     <div class="sheet-scroll">
-      <div id="resultsSummary" class="summary">
-        <p class="placeholder">Vyberte jednotku a spusťte výpočet.</p>
+      <div id="resultsSummary">
+        <p class="placeholder">Vyberte územní jednotku a spusťte výpočet.</p>
       </div>
 
       <div class="table-wrap">
         <table id="resultsTable">
           <thead>
-            <tr><th>Normál</th><th>T °C</th><th>R mm</th><th>Index</th></tr>
+            <tr>
+              <th>Normál</th>
+              <th>T avg (°C)</th>
+              <th>R avg (mm)</th>
+              <th>Index</th>
+            </tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -206,7 +319,7 @@
     </div>
   </div>
 
-</div>
+</div><!-- /app -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
 <script src="./js/config.production.js"></script>
@@ -217,20 +330,32 @@
 <script src="./js/ui.js"></script>
 
 <script>
-  // Collapse / expand control card
-  const card = document.getElementById('controlCard');
-  const body = document.getElementById('cardBody');
-  const btn  = document.getElementById('collapseBtn');
-  btn.addEventListener('click', () => {
-    const collapsed = card.classList.toggle('collapsed');
-    btn.textContent = collapsed ? '+' : '−';
+  // Mobile sidebar toggle
+  const sidebar = document.getElementById('sidebar');
+  const mobileSidebarBtn = document.getElementById('mobileSidebarBtn');
+  const sidebarClose = document.getElementById('sidebarClose');
+
+  mobileSidebarBtn.addEventListener('click', () => {
+    sidebar.classList.add('open');
+    mobileSidebarBtn.style.display = 'none';
   });
 
-  // Auto-collapse on mobile
-  if (window.innerWidth <= 600) {
-    card.classList.add('collapsed');
-    btn.textContent = '+';
+  sidebarClose.addEventListener('click', () => {
+    sidebar.classList.remove('open');
+    mobileSidebarBtn.style.display = '';
+  });
+
+  // Hide sidebar close on desktop
+  function updateSidebarToggleVisibility() {
+    if (window.innerWidth >= 768) {
+      sidebar.classList.remove('open');
+      mobileSidebarBtn.style.display = 'none';
+    } else {
+      mobileSidebarBtn.style.display = '';
+    }
   }
+  window.addEventListener('resize', updateSidebarToggleVisibility);
+  updateSidebarToggleVisibility();
 
   // Close results sheet
   document.getElementById('closeSheetBtn').addEventListener('click', () => {

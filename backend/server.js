@@ -13,8 +13,8 @@ const app = express();
 // CORS configuration - allow requests from your hosting domain
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (curl, Postman)
-    if (!origin) return callback(null, true);
+    // Allow requests with no origin (curl, Postman) or null origin (file://)
+    if (!origin || origin === 'null') return callback(null, true);
     const allowed = [
       'http://localhost:3000',
       'http://localhost:5500',
