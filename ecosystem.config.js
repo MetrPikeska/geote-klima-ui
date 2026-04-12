@@ -4,7 +4,7 @@ module.exports = {
     {
       name: "geote-api",
       script: "../venv/bin/python3",
-      args: "-m uvicorn main:app --host 0.0.0.0 --port 8000",
+      args: "-m uvicorn main:app --host 0.0.0.0 --port 8001",
       cwd: "./api",
       interpreter: "none",
       autorestart: true,
