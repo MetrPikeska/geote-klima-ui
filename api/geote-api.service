@@ -1,0 +1,15 @@
+[Unit]
+Description=GeoTE Climate FastAPI
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=petr
+WorkingDirectory=/opt/geote-api
+EnvironmentFile=/opt/geote-api/.env
+ExecStart=/opt/geote-api/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

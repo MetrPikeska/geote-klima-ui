@@ -1,19 +1,18 @@
 // === config.production.js ===
-// Production configuration — Cloudflare Tunnel
-// Subdomény směřují na lokální server přes cloudflared tunel
+// Production configuration — Cloudflare Tunnel → FastAPI na Ubuntu serveru
 
 window.ClimateApp = window.ClimateApp || {};
 
 ClimateApp.config = {
-  // pg_featureserv (OGC API Features) přes Cloudflare Tunnel
+  // FastAPI backend přes Cloudflare Tunnel
+  BACKEND_URL: "https://api.petrmikeska.cz",
+
+  // pg_featureserv (OGC API Features) — pokud stále běží, jinak přes FastAPI
   BASE_API_URL: "https://api.petrmikeska.cz",
 
-  // Node.js backend přes Cloudflare Tunnel
-  BACKEND_URL: "https://backend.petrmikeska.cz",
-
-  // Tile server přes Cloudflare Tunnel (pokud běží pg_tileserv)
-  TILE_URL: "https://tiles.petrmikeska.cz/public.climate_master_geom/{z}/{x}/{y}.png"
+  // Tile server — volitelné
+  TILE_URL: "https://api.petrmikeska.cz/tiles/public.climate_master_geom/{z}/{x}/{y}.png"
 };
 
 // Cloudflare Tunnel config: ~/.cloudflared/config.yml na Ubuntu serveru
-// Systemd služba: sudo systemctl status cloudflared
+// FastAPI běží na portu 8000, tunel ho vystaví jako api.petrmikeska.cz
