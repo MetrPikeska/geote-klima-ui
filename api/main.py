@@ -61,10 +61,10 @@ def is_allowed_origin(origin: str) -> bool:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?|https://(.*\.)?petrmikeska\.cz|https://.*\.trycloudflare\.com",
+    allow_origins=["*"],
     allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
-    allow_credentials=True,
+    allow_headers=["*"],
+    allow_credentials=False,
 )
 
 # ── Models ───────────────────────────────────────────────────
