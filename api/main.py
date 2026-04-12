@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import os
 import time
 from contextlib import asynccontextmanager
@@ -9,7 +10,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -17,6 +18,9 @@ from slowapi.util import get_remote_address
 from database import close_pool, get_pool
 
 load_dotenv()
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+log = logging.getLogger("geote")
 
 # ── Rate limiting ────────────────────────────────────────────
 limiter = Limiter(key_func=get_remote_address)
@@ -29,36 +33,11 @@ async def lifespan(app: FastAPI):
     await close_pool()
 
 
-app = FastAPI(title="GeoTE Climate API", lifespan=lifespan)
+app = FastAPI(title="GeoTE Climate API", lifespan=lifespan, docs_url=None, redoc_url=None)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ── CORS ─────────────────────────────────────────────────────
-ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:5500",
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
-    "http://localhost",
-    "http://127.0.0.1",
-    "https://petrmikeska.cz",
-    "http://petrmikeska.cz",
-    "https://www.petrmikeska.cz",
-    "http://www.petrmikeska.cz",
-    "https://api.petrmikeska.cz",
-]
-
-
-def is_allowed_origin(origin: str) -> bool:
-    if origin in ALLOWED_ORIGINS:
-        return True
-    if origin.endswith(".trycloudflare.com"):
-        return True
-    if origin.endswith(".petrmikeska.cz"):
-        return True
-    return False
-
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -67,11 +46,23 @@ app.add_middleware(
     allow_credentials=False,
 )
 
+# ── Constants ─────────────────────────────────────────────────
+MAX_BODY_BYTES   = 256 * 1024        # 256 KB max POST body
+MAX_VERTICES     = 8_000             # max souřadnic v polygonu
+VALID_GEOM_TYPES = {"Polygon", "MultiPolygon", "Feature"}
+
 # ── Models ───────────────────────────────────────────────────
 
 class Geometry(BaseModel):
     type: str
     coordinates: Any
+
+    @field_validator("type")
+    @classmethod
+    def validate_type(cls, v: str) -> str:
+        if v not in ("Polygon", "MultiPolygon"):
+            raise ValueError(f"Nepodporovaný typ geometrie: {v}. Povoleno: Polygon, MultiPolygon")
+        return v
 
 
 class PolygonRequest(BaseModel):
@@ -80,6 +71,13 @@ class PolygonRequest(BaseModel):
     label: str | None = None
     labels: list[str] | None = None
     export: str | None = None
+
+    @field_validator("label")
+    @classmethod
+    def sanitize_label(cls, v: str | None) -> str | None:
+        if v is not None:
+            return v[:200]  # max délka labelu
+        return v
 
 
 # ── Helpers ──────────────────────────────────────────────────
@@ -99,6 +97,33 @@ def detect_srid_5514(geom: dict) -> bool:
             if abs(v) > 180:
                 return True
     return False
+
+
+def count_vertices(geom: dict) -> int:
+    """Spočítá celkový počet souřadnicových dvojic v geometrii."""
+    count = 0
+    stack = [geom.get("coordinates")]
+    while stack:
+        v = stack.pop()
+        if isinstance(v, list):
+            if v and isinstance(v[0], (int, float)):
+                count += 1  # toto je [x, y] pár
+            else:
+                stack.extend(v)
+    return count
+
+
+def validate_geometry(geom: dict) -> None:
+    """Odmítne geometrie které jsou příliš velké nebo neplatného typu."""
+    g_type = geom.get("type", "")
+    if g_type not in VALID_GEOM_TYPES:
+        raise HTTPException(400, f"Neplatný typ geometrie: '{g_type}'")
+    vertices = count_vertices(geom)
+    if vertices > MAX_VERTICES:
+        raise HTTPException(
+            400,
+            f"Geometrie má příliš mnoho vrcholů ({vertices}). Maximum: {MAX_VERTICES}."
+        )
 
 
 def geom_expr(is_5514: bool) -> str:
@@ -338,7 +363,7 @@ async def health():
 
 
 @app.get("/units/{unit_type}")
-@limiter.limit("60/minute")
+@limiter.limit("30/minute")
 async def get_units(request: Request, unit_type: str):
     cfg = UNIT_TYPES.get(unit_type)
     if not cfg:
@@ -390,29 +415,41 @@ async def get_units(request: Request, unit_type: str):
 
 
 @app.post("/climate/polygon")
-@limiter.limit("30/minute")
+@limiter.limit("20/minute")
 async def climate_polygon(
     request: Request,
     body: PolygonRequest,
     export: str | None = Query(default=None),
 ):
+    # ── Body size guard ───────────────────────────────────────
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > MAX_BODY_BYTES:
+        raise HTTPException(413, f"Požadavek je příliš velký (max {MAX_BODY_BYTES // 1024} KB).")
+
     pool = await get_pool()
     t0 = time.monotonic()
+    ip = request.client.host if request.client else "unknown"
 
     # ── Batch ─────────────────────────────────────────────────
     if body.geometries:
+        if len(body.geometries) > 50:
+            raise HTTPException(400, "Batch limit: max 50 geometrií najednou.")
         results = []
         for i, raw_geom in enumerate(body.geometries):
             lbl = (body.labels[i] if body.labels and i < len(body.labels) else f"Unit {i+1}")
             try:
                 geom = extract_geometry(raw_geom)
+                validate_geometry(geom)
                 result = await compute_climate(pool, geom, lbl)
                 if result:
                     results.append({"index": i, **result})
                 else:
                     results.append({"index": i, "error": "No climate data found", "unitName": lbl})
+            except HTTPException as e:
+                results.append({"index": i, "error": e.detail, "unitName": lbl})
             except Exception as e:
-                results.append({"index": i, "error": str(e), "unitName": lbl})
+                log.warning("Batch item %d error (IP %s): %s", i, ip, e)
+                results.append({"index": i, "error": "Chyba výpočtu", "unitName": lbl})
 
         return {
             "batch": True,
@@ -424,6 +461,10 @@ async def climate_polygon(
     # ── Single ────────────────────────────────────────────────
     if not body.geometry:
         raise HTTPException(status_code=400, detail="Missing 'geometry' or 'geometries'")
+
+    geom = extract_geometry(body.geometry)
+    validate_geometry(geom)
+    log.info("Climate request: label=%s vertices=%d ip=%s", body.label, count_vertices(geom), ip)
 
     geom = extract_geometry(body.geometry)
     result = await compute_climate(pool, geom, body.label)
