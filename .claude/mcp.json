@@ -8,6 +8,14 @@
         "postgresql://postgres:master@localhost:5432/klima"
       ],
       "description": "PostgreSQL MCP server for klima database (PostGIS enabled)"
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
+      ],
+      "description": "Chrome DevTools MCP server for UI development and testing"
     }
   }
 }

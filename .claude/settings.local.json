@@ -3,7 +3,42 @@
     "allow": [
       "Bash(git checkout:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\n✨ Add MCP server configuration for PostgreSQL database access\n\nThis commit adds Model Context Protocol (MCP) server configuration to enable\nClaude Code to directly interact with the PostgreSQL klima database.\n\n## Features:\n- PostgreSQL MCP server configuration\n- Direct database query capability for Claude Code\n- Schema exploration and data analysis tools\n- PostGIS spatial query support\n\n## Files Added:\n- .claude/mcp.json.example - Template configuration (safe to commit)\n- .claude/README.md - Setup instructions and documentation\n\n## Security:\n- .claude/mcp.json (with credentials) excluded from git\n- Updated .gitignore to protect sensitive configuration files\n\n## What this enables:\n- ✅ Claude can explore database schema\n- ✅ Run SQL queries and analyze results  \n- ✅ Debug and optimize PostGIS spatial queries\n- ✅ Provide context-aware database suggestions\n- ✅ Analyze climate data patterns\n\n## Setup Instructions:\n1. Copy .claude/mcp.json.example to .claude/mcp.json\n2. Edit mcp.json and set your PostgreSQL password\n3. Restart Claude Code/VSCode\n4. MCP server will automatically connect to the database\n\n## Documentation:\nSee .claude/README.md for detailed setup and usage instructions.\n\n🤖 Generated with Claude Code\nhttps://claude.com/claude-code\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(node test-db.js:*)"
+      "Bash(node test-db.js:*)",
+      "mcp__chrome-devtools__list_pages",
+      "mcp__chrome-devtools__navigate_page",
+      "mcp__chrome-devtools__take_screenshot",
+      "mcp__chrome-devtools__evaluate_script",
+      "Read(//home/petr-mikeska/**)",
+      "Read(//home/petr-mikeska/projects/**)",
+      "Bash(ssh:*)",
+      "Bash(curl -s --connect-timeout 10 ftp://383750.w50.wedos.net/ --user \"w383750_main:A9TG3MS5\")",
+      "Bash(curl:*)",
+      "Bash(1 curl:*)",
+      "Bash(for f:*)",
+      "Bash(do)",
+      "Bash(echo \"$f OK\")",
+      "Bash(done)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)",
+      "mcp__chrome-devtools__emulate",
+      "Bash(npx --yes http-server . -p 8090 --silent)",
+      "mcp__chrome-devtools__new_page",
+      "mcp__chrome-devtools__resize_page",
+      "mcp__chrome-devtools__list_console_messages",
+      "Bash(./start.sh:*)",
+      "Bash(PGPASSWORD=master psql -h 100.95.250.20 -U postgres -d klima -c \"SELECT 1\")",
+      "Bash(./stop.sh)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(c['id']\\) for c in d.get\\('collections',[]\\)]\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(f['properties'].get\\('naz_cznuts3','?'\\)\\) for f in d.get\\('features',[]\\)]\")",
+      "Bash(python3 -c ':*)",
+      "Bash(PGPASSWORD=master psql:*)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "chrome-devtools"
+  ]
 }

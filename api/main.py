@@ -314,11 +314,74 @@ def extract_geometry(raw) -> dict:
     return raw.dict() if hasattr(raw, "dict") else raw
 
 
+# ── Unit type config ─────────────────────────────────────────
+
+UNIT_TYPES = {
+    "kraje":  {"table": "kraje",  "label_col": "naz_cznuts3", "limit": 20},
+    "okresy": {"table": "okresy", "label_col": "nazev",       "limit": 100},
+    "orp":    {"table": "orp",    "label_col": "NAZ_ORP",     "limit": 300},
+    "obce":   {"table": "obce",   "label_col": "nazev",       "limit": 7000},
+    "chko":   {"table": "chko",   "label_col": "NAZEV",       "limit": 50},
+}
+
+
 # ── Endpoints ─────────────────────────────────────────────────
 
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/units/{unit_type}")
+@limiter.limit("60/minute")
+async def get_units(request: Request, unit_type: str):
+    cfg = UNIT_TYPES.get(unit_type)
+    if not cfg:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Neznámý typ jednotky '{unit_type}'. Platné: {', '.join(UNIT_TYPES)}"
+        )
+
+    pool = await get_pool()
+    table = cfg["table"]
+    label_col = cfg["label_col"]
+    limit = cfg["limit"]
+
+    # Quote label column in case it contains uppercase letters
+    q_label = f'"{label_col}"'
+
+    sql = f"""
+        SELECT
+            {q_label} AS label,
+            ST_AsGeoJSON(
+                ST_Transform(
+                    ST_SimplifyPreserveTopology(geom, 50),
+                    4326
+                ),
+                6
+            ) AS geojson
+        FROM {table}
+        ORDER BY {q_label}
+        LIMIT {limit}
+    """
+
+    rows = await pool.fetch(sql)
+
+    features = []
+    for i, row in enumerate(rows):
+        if not row["geojson"]:
+            continue
+        features.append({
+            "type": "Feature",
+            "id": i,
+            "geometry": json.loads(row["geojson"]),
+            "properties": {"label": row["label"]},
+        })
+
+    return {
+        "type": "FeatureCollection",
+        "features": features,
+    }
 
 
 @app.post("/climate/polygon")

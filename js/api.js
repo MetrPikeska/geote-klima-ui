@@ -1,5 +1,5 @@
 // === api.js ===
-// Communication with OGC API Features + Node backend for climate calculations
+// Communication with FastAPI backend for units + climate calculations
 
 window.ClimateApp = window.ClimateApp || {};
 
@@ -7,58 +7,28 @@ window.ClimateApp = window.ClimateApp || {};
 // For production, load config.production.js in index.html BEFORE api.js
 if (!ClimateApp.config) {
   ClimateApp.config = {
-    BASE_API_URL: "http://localhost:9000",   // pg-featureserv
-    TILE_URL: "http://localhost:7800/public.climate_master_geom/{z}/{x}/{y}.png",
-    BACKEND_URL: "http://localhost:4000"     // Node backend
+    BACKEND_URL: "http://localhost:8000",
+    TILE_URL: ""
   };
 }
 
 ClimateApp.api = (function () {
 
   /**
-   * Fetches a list of ORP or CHKO units from pg-featureserv
+   * Fetches a list of administrative units from FastAPI /units/{type}
    */
   async function fetchUnits(type) {
-    let collectionId;
-    let labelProp;
-    let limit = 500;
-
-    switch (type) {
-      case "kraje":
-        collectionId = "public.kraje";
-        labelProp = "naz_cznuts3";
-        break;
-      case "okresy":
-        collectionId = "public.okresy";
-        labelProp = "nazev";
-        break;
-      case "orp":
-        collectionId = "public.orp";
-        labelProp = "NAZ_ORP";
-        break;
-      case "obce":
-        collectionId = "public.obce";
-        labelProp = "nazev";
-        limit = 7000;
-        break;
-      case "chko":
-        collectionId = "public.chko";
-        labelProp = "NAZEV";
-        break;
-      default:
-        return [];
-    }
-
-    const url = `${ClimateApp.config.BASE_API_URL}/collections/${collectionId}/items?limit=${limit}`;
+    const url = `${ClimateApp.config.BACKEND_URL}/units/${type}`;
 
     try {
       const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const features = data.features || [];
 
       return features.map((f) => ({
-        id: f.id ?? f.properties?.id ?? f.properties?.[labelProp],
-        label: f.properties?.[labelProp],
+        id: f.id ?? f.properties?.label,
+        label: f.properties?.label,
         geom: f.geometry,
         properties: f.properties
       }));
