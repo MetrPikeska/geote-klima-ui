@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/units/:path*",
+      "destination": "https://truly-frequently-dice-markets.trycloudflare.com/units/:path*"
+    },
+    {
+      "source": "/climate/:path*",
+      "destination": "https://truly-frequently-dice-markets.trycloudflare.com/climate/:path*"
+    },
+    {
+      "source": "/health",
+      "destination": "https://truly-frequently-dice-markets.trycloudflare.com/health"
+    }
+  ]
+}
