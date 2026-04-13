@@ -20,6 +20,8 @@
   --gold-dim: oklch(76% 0.13 72 / 12%);
   --gold-mid: oklch(76% 0.13 72 / 30%);
   --gold-hi:  oklch(76% 0.13 72 / 50%);
+  --gold-lo:  oklch(76% 0.13 72 / 60%);
+  --gold-xs:  oklch(76% 0.13 72 / 65%);
 
   /* ── Text ──────────────────────────────────────────── */
   --t1: oklch(93% 0.01 255);
@@ -174,7 +176,8 @@ html, body {
 }
 
 .map-btn {
-  padding: 5px 13px;
+  padding: 8px 13px;
+  min-height: 36px;
   border: none;
   background: transparent;
   border-radius: var(--pill);
@@ -343,12 +346,14 @@ html, body {
 }
 
 .s-label {
+  display: block;
   font-family: var(--font-display);
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--t3);
+  cursor: default;
 }
 
 .s-divider {
@@ -423,7 +428,7 @@ html, body {
   font-variant-numeric: tabular-nums;
 }
 .utype-btn.active .utype-count {
-  color: oklch(76% 0.13 72 / 65%);
+  color: var(--gold-xs);
 }
 
 /* ── Unit search & list ─────────────────────────────────── */
@@ -642,7 +647,7 @@ html, body {
   color: var(--t3);
   font-variant-numeric: tabular-nums;
 }
-.ind-btn.active .ind-unit { color: oklch(76% 0.13 72 / 60%); }
+.ind-btn.active .ind-unit { color: var(--gold-lo); }
 
 /* ── Normal segmented control ───────────────────────────── */
 .normal-segs {
@@ -656,7 +661,8 @@ html, body {
 
 .norm-btn {
   flex: 1;
-  padding: 6px 4px;
+  padding: 8px 4px;
+  min-height: 36px;
   background: transparent;
   border: none;
   border-radius: 7px;
@@ -706,7 +712,7 @@ html, body {
 }
 
 .stopwatch-text {
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 300;
   color: var(--t3);
   text-align: center;
@@ -721,7 +727,7 @@ html, body {
   background: var(--gold);
   border: none;
   border-radius: var(--r2);
-  color: oklch(9% 0.018 255);
+  color: var(--bg);
   font-family: var(--font-display);
   font-size: 13px;
   font-weight: 700;
@@ -985,7 +991,7 @@ html, body {
 .mc-value.mc-null { color: var(--t3); font-size: 16px; }
 
 .mc-sub {
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 300;
   color: var(--t2);
   font-variant-numeric: tabular-nums;
@@ -1111,6 +1117,20 @@ html, body {
 }
 
 /* ============================================================
+   TABLET RESPONSIVE (768px – 1024px)
+   ============================================================ */
+@media (min-width: 768px) and (max-width: 1024px) {
+  :root { --sidebar-w: 260px; }
+
+  .utype-grid { grid-template-columns: repeat(3, 1fr); }
+  .indicator-grid { grid-template-columns: 1fr 1fr; }
+
+  .metric-cards { grid-template-columns: repeat(3, 1fr); }
+
+  #resultsSheet { height: 52vh; }
+}
+
+/* ============================================================
    MOBILE RESPONSIVE
    ============================================================ */
 @media (max-width: 767px) {
@@ -1166,14 +1186,33 @@ html, body {
 
 /* ── Map unit tooltip ───────────────────────────────────── */
 .unit-tooltip {
-  background: oklch(14.5% 0.022 255 / 92%);
-  border: 1px solid oklch(26% 0.022 255 / 70%);
-  color: oklch(93% 0.01 255);
-  font-family: 'DM Sans', sans-serif;
+  background: color-mix(in oklch, var(--bg-2), transparent 8%);
+  border: 1px solid var(--bdr);
+  color: var(--t1);
+  font-family: var(--font-body);
   font-size: 12px;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: var(--r1);
   box-shadow: 0 2px 8px oklch(0% 0 0 / 40%);
   white-space: nowrap;
 }
 .unit-tooltip::before { display: none; }
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Keep the sidebar + sheet slides functional (instant snap) */
+  #sidebar,
+  #resultsSheet {
+    transition: none !important;
+  }
+}

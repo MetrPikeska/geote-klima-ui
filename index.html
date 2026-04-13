@@ -6,14 +6,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H"
+        crossorigin="anonymous"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"
+        integrity="sha384-NZLkVuBRMEeB4VeZz27WwTRvlhec30biQ8Xx7zG7JJnkvEKRg5qi6BNbEXo9ydwv"
+        crossorigin="anonymous"/>
   <link rel="stylesheet" href="./css/style.css">
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"
+          integrity="sha384-vsrfeLOOY6KuIYKDlmVH5UiBmgIdB1oEf7p01YgWHuqmOHfZr374+odEv96n9tNC"
+          crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH"
+          crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"
+          integrity="sha384-JP5UPxIO2Tm2o79Fb0tGYMa44jkWar53aBoCbd8ah0+LcCDoohTIYr+zIXyfGIJN"
+          crossorigin="anonymous"></script>
 </head>
 <body>
 <div id="app">
@@ -30,13 +41,13 @@
   </div>
 
   <!-- ── LEFT SIDEBAR ──────────────────────────────────── -->
-  <aside id="sidebar">
+  <aside id="sidebar" aria-label="Ovládací panel">
     <div id="sidebarInner">
 
       <!-- Header -->
       <div class="sidebar-head">
         <div class="brand">
-          <svg class="brand-icon" viewBox="0 0 24 24" fill="none">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
                   stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -135,9 +146,9 @@
 
         <!-- ── Unit search + list ───────────────────── -->
         <div class="s-section" id="unitSearchSection">
-          <div class="s-label" data-i18n="section.select">Vybrat jednotku</div>
+          <label class="s-label" for="unitSearch" data-i18n="section.select">Vybrat jednotku</label>
           <div class="search-wrap">
-            <svg class="search-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <svg class="search-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
               <circle cx="6.5" cy="6.5" r="4"/>
               <path d="M10 10l3.5 3.5" stroke-linecap="round"/>
             </svg>
@@ -145,7 +156,7 @@
                    data-i18n-ph="search.placeholder" placeholder="Hledat…"
                    autocomplete="off" spellcheck="false"/>
           </div>
-          <select id="unitSelect" multiple size="6" class="unit-list-sel">
+          <select id="unitSelect" multiple size="6" class="unit-list-sel" aria-label="Seznam územních jednotek">
             <option value="" disabled data-i18n="select.loading">Načítám…</option>
           </select>
         </div>
@@ -299,8 +310,8 @@
       <div class="sheet-handle"></div>
       <div class="sheet-title" id="sheetTitle" data-i18n="sheet.title">Výsledky analýzy</div>
       <div class="sheet-actions">
-        <button id="exportGeoBtn" class="btn-export" style="display:none">
-          <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <button id="exportGeoBtn" class="btn-export" style="display:none" aria-label="Exportovat jako GeoJSON">
+          <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
             <path d="M10 3v10M6 9l4 4 4-4"/>
             <path d="M3 15h14"/>
           </svg>
@@ -342,7 +353,9 @@
 
 </div><!-- /app -->
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"
+        integrity="sha384-J0tVE+pc6+J+SL83ZUKefEICEm8eF0o077ASBJxPiLdjpwxALwH0cb26lrEAIc3P"
+        crossorigin="anonymous"></script>
 <script src="./js/config.production.js"></script>
 <script src="./js/i18n.js"></script>
 <script src="./js/api.js"></script>
