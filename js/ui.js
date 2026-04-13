@@ -41,6 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let stopwatchInterval = null;
   let currentChart = null;
+  let lastResults = null;          // cache for re-render on normal change
+  let lastClimateData = null;
+  let lastIndicatorKey = null;
 
   // ── Init ───────────────────────────────────────────────────────
   ClimateApp.map.initMap();
@@ -153,6 +156,14 @@ document.addEventListener('DOMContentLoaded', () => {
       normalSegs.querySelectorAll('.norm-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       ClimateApp.state.activeNormal = btn.dataset.key;
+
+      // Re-render results highlighting the newly selected normal
+      if (lastResults && lastClimateData && lastIndicatorKey) {
+        const diffs = lastResults.length >= 2
+          ? ClimateApp.compute.computeDifferences(lastResults) : {};
+        renderResultsSummary(lastClimateData, lastResults, diffs, lastIndicatorKey);
+        renderResultsTable(lastResults);
+      }
     });
   });
 
@@ -188,6 +199,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const results = ClimateApp.compute.computeForIndicator(filteredData, indicatorKey);
       const diffs   = filtered.length >= 2 ? ClimateApp.compute.computeDifferences(results) : {};
+
+      // Cache for normal-switching re-render
+      lastResults      = results;
+      lastClimateData  = filteredData;
+      lastIndicatorKey = indicatorKey;
 
       renderResultsSummary(filteredData, results, diffs, indicatorKey);
       renderResultsTable(results);
@@ -378,14 +394,16 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="metric-cards">
     `;
 
+    const activeNormal = ClimateApp.state.activeNormal;
     results.forEach(r => {
       const val = r.index;
       const isNull = val == null;
+      const isActive = r.key === activeNormal;
       html += `
-        <div class="metric-card ${normalClass(r.key)}">
+        <div class="metric-card ${normalClass(r.key)}${isActive ? ' mc-active' : ''}">
           <div class="mc-period">${r.label}</div>
           <div class="mc-value ${isNull ? 'mc-null' : ''}">
-            ${isNull ? '—' : fmt(val) + (isDelta && r.key !== 'old' && val >= 0 ? '' : '')}
+            ${isNull ? '—' : fmt(val)}
             ${!isNull && unit ? `<span style="font-size:13px;font-weight:400;color:var(--t3);margin-left:2px">${unit}</span>` : ''}
           </div>
           <div class="mc-sub">T: ${fmt(r.T, 1)}°C &nbsp;·&nbsp; R: ${r.R != null ? Math.round(r.R) + ' mm' : '—'}</div>
@@ -494,17 +512,17 @@ document.addEventListener('DOMContentLoaded', () => {
       dataFuture.push(cf[0]?.index ?? null);
     });
 
-    const TITLE = 'oklch(93% 0.01 255)';
-    const TICK  = 'oklch(62% 0.025 255)';
-    const GRID  = 'oklch(26% 0.022 255 / 40%)';
+    const TITLE = 'oklch(22% 0.018 255)';
+    const TICK  = 'oklch(55% 0.018 255)';
+    const GRID  = 'oklch(84% 0.012 90)';
 
     return new Chart(canvas, {
       type: 'bar',
       data: {
         labels,
         datasets: [
-          { label: '1991–2020',  data: dataNew,    backgroundColor: 'oklch(72% 0.16 148 / 55%)', borderColor: 'oklch(72% 0.16 148)', borderWidth: 1 },
-          { label: 'Predikce 2050', data: dataFuture, backgroundColor: 'oklch(70% 0.17 40 / 55%)', borderColor: 'oklch(70% 0.17 40)', borderWidth: 1 },
+          { label: '1991–2020',  data: dataNew,    backgroundColor: 'oklch(48% 0.17 148 / 38%)', borderColor: 'oklch(48% 0.17 148)', borderWidth: 1 },
+          { label: 'Predikce 2050', data: dataFuture, backgroundColor: 'oklch(56% 0.17 40 / 38%)', borderColor: 'oklch(56% 0.17 40)', borderWidth: 1 },
         ],
       },
       options: {

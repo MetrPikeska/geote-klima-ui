@@ -1,6 +1,6 @@
 /* ============================================================
-   GeoKlima — Design System v4
-   Palette: amber/gold on deep charcoal
+   GeoKlima — Design System v5
+   Palette: forest teal on warm cream (light theme)
    Fonts: Syne (display) + DM Sans (body)
    ============================================================ */
 
@@ -10,45 +10,44 @@
 
 :root {
   /* ── Base ──────────────────────────────────────────── */
-  --bg:    oklch(9% 0.018 255);
-  --bg-1:  oklch(11.5% 0.02 255);
-  --bg-2:  oklch(14.5% 0.022 255);
-  --bg-3:  oklch(19% 0.026 255);
+  --bg:   oklch(97.5% 0.006 90);
+  --bg-1: oklch(99.5% 0.003 90);
+  --bg-2: oklch(95.5% 0.008 90);
+  --bg-3: oklch(91% 0.012 90);
 
-  /* ── Accent: warm amber ────────────────────────────── */
-  --gold:     oklch(76% 0.13 72);
-  --gold-dim: oklch(76% 0.13 72 / 12%);
-  --gold-mid: oklch(76% 0.13 72 / 30%);
-  --gold-hi:  oklch(76% 0.13 72 / 50%);
-  --gold-lo:  oklch(76% 0.13 72 / 60%);
-  --gold-xs:  oklch(76% 0.13 72 / 65%);
+  /* ── Accent: deep forest teal ──────────────────────── */
+  --acc:     oklch(42% 0.14 165);
+  --acc-dim: oklch(42% 0.14 165 / 10%);
+  --acc-mid: oklch(42% 0.14 165 / 25%);
+  --acc-hi:  oklch(42% 0.14 165 / 45%);
+  --acc-lo:  oklch(42% 0.14 165 / 60%);
+  --acc-xs:  oklch(42% 0.14 165 / 70%);
 
   /* ── Text ──────────────────────────────────────────── */
-  --t1: oklch(93% 0.01 255);
-  --t2: oklch(62% 0.025 255);
-  --t3: oklch(38% 0.032 255);
+  --t1: oklch(18% 0.018 255);
+  --t2: oklch(44% 0.022 255);
+  --t3: oklch(62% 0.018 255);
 
   /* ── Borders ───────────────────────────────────────── */
-  --bdr:    oklch(26% 0.022 255 / 70%);
-  --bdr-hi: oklch(76% 0.13 72 / 45%);
+  --bdr:    oklch(84% 0.012 90);
+  --bdr-hi: oklch(42% 0.14 165 / 40%);
 
   /* ── Semantic ──────────────────────────────────────── */
-  --green:  oklch(72% 0.16 148);
-  --red:    oklch(66% 0.19 25);
-  --blue:   oklch(68% 0.17 240);
+  --green:  oklch(48% 0.17 148);
+  --red:    oklch(50% 0.19 25);
+  --blue:   oklch(50% 0.18 240);
 
   /* ── Chart normals palette ─────────────────────────── */
-  --c-old:    oklch(68% 0.17 240);
-  --c-new:    oklch(72% 0.16 148);
-  --c-future: oklch(70% 0.17 40);
+  --c-old:    oklch(50% 0.18 240);
+  --c-new:    oklch(48% 0.17 148);
+  --c-future: oklch(56% 0.17 40);
 
   /* ── Layout ────────────────────────────────────────── */
   --sidebar-w: 300px;
-  --topbar-h: 54px;
 
   /* ── Motion ────────────────────────────────────────── */
-  --ease:  cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease:     cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --dur: 0.18s;
 
   /* ── Type ──────────────────────────────────────────── */
@@ -60,6 +59,11 @@
   --r2: 10px;
   --r3: 14px;
   --pill: 999px;
+
+  /* ── Shadow ────────────────────────────────────────── */
+  --shadow-sm: 0 1px 3px oklch(18% 0.02 255 / 8%), 0 1px 2px oklch(18% 0.02 255 / 6%);
+  --shadow-md: 0 4px 16px oklch(18% 0.02 255 / 10%), 0 2px 6px oklch(18% 0.02 255 / 6%);
+  --shadow-lg: 0 8px 32px oklch(18% 0.02 255 / 12%), 0 4px 12px oklch(18% 0.02 255 / 8%);
 }
 
 html, body {
@@ -93,6 +97,11 @@ html, body {
   z-index: 0;
 }
 
+/* Remove focus bounding box on polygon click */
+.leaflet-interactive:focus {
+  outline: none !important;
+}
+
 /* ── Leaflet overrides ──────────────────────────────────── */
 .leaflet-top.leaflet-right {
   margin-top: 12px;
@@ -103,11 +112,11 @@ html, body {
   border: 1px solid var(--bdr) !important;
   border-radius: var(--r2) !important;
   overflow: hidden;
-  box-shadow: 0 4px 24px oklch(0% 0 0 / 50%) !important;
+  box-shadow: var(--shadow-md) !important;
 }
 
 .leaflet-control-zoom a {
-  background: oklch(11% 0.02 255 / 92%) !important;
+  background: oklch(99% 0.003 90 / 94%) !important;
   border-color: var(--bdr) !important;
   color: var(--t2) !important;
   backdrop-filter: blur(12px);
@@ -115,41 +124,41 @@ html, body {
 }
 .leaflet-control-zoom a:hover {
   background: var(--bg-3) !important;
-  color: var(--gold) !important;
+  color: var(--acc) !important;
 }
 
 .leaflet-draw-toolbar {
-  background: oklch(11% 0.02 255 / 92%) !important;
+  background: oklch(99% 0.003 90 / 94%) !important;
   backdrop-filter: blur(12px) !important;
   border: 1px solid var(--bdr) !important;
   border-radius: var(--r2) !important;
   overflow: hidden;
-  box-shadow: 0 4px 24px oklch(0% 0 0 / 40%) !important;
+  box-shadow: var(--shadow-md) !important;
 }
 .leaflet-draw-toolbar a {
   background-color: transparent !important;
   border-color: var(--bdr) !important;
-  filter: brightness(0) invert(0.55) !important;
+  filter: brightness(0) invert(0) opacity(0.4) !important;
   transition: filter var(--dur) var(--ease), background var(--dur) var(--ease) !important;
 }
 .leaflet-draw-toolbar a:hover {
-  background-color: var(--gold-dim) !important;
-  filter: brightness(0) saturate(100%) invert(72%) sepia(60%) saturate(600%) hue-rotate(5deg) brightness(110%) !important;
+  background-color: var(--acc-dim) !important;
+  filter: brightness(0) saturate(100%) invert(28%) sepia(70%) saturate(500%) hue-rotate(130deg) brightness(90%) !important;
 }
 .leaflet-draw-edit-toolbar .leaflet-draw-edit-edit:not(.leaflet-disabled),
 .leaflet-draw-edit-toolbar .leaflet-draw-edit-remove:not(.leaflet-disabled) {
-  filter: brightness(0) saturate(100%) invert(72%) sepia(60%) saturate(600%) hue-rotate(5deg) brightness(110%) !important;
-  background-color: var(--gold-dim) !important;
+  filter: brightness(0) saturate(100%) invert(28%) sepia(70%) saturate(500%) hue-rotate(130deg) brightness(90%) !important;
+  background-color: var(--acc-dim) !important;
 }
 
 .leaflet-control-attribution {
-  background: oklch(5% 0.01 255 / 80%) !important;
+  background: oklch(99% 0.003 90 / 80%) !important;
   color: var(--t3) !important;
   font-size: 10px !important;
 }
 
 .leaflet-control-scale-line {
-  background: oklch(11% 0.02 255 / 85%) !important;
+  background: oklch(99% 0.003 90 / 88%) !important;
   border-color: var(--t3) !important;
   color: var(--t3) !important;
   font-family: var(--font-body) !important;
@@ -167,10 +176,10 @@ html, body {
   display: flex;
   gap: 2px;
   padding: 3px;
-  background: oklch(11% 0.02 255 / 90%);
+  background: oklch(99% 0.003 90 / 92%);
   border: 1px solid var(--bdr);
   border-radius: var(--pill);
-  box-shadow: 0 4px 20px oklch(0% 0 0 / 45%);
+  box-shadow: var(--shadow-md);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
@@ -192,13 +201,13 @@ html, body {
 }
 .map-btn:hover { background: var(--bg-3); color: var(--t1); }
 .map-btn:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--acc);
   outline-offset: 2px;
 }
 .map-btn.active {
-  background: var(--gold-dim);
-  color: var(--gold);
-  box-shadow: 0 0 0 1px var(--gold-hi) inset;
+  background: var(--acc-dim);
+  color: var(--acc);
+  box-shadow: 0 0 0 1px var(--acc-hi) inset;
 }
 
 /* ============================================================
@@ -214,16 +223,22 @@ html, body {
   flex-direction: column;
   background: var(--bg-1);
   border-right: 1px solid var(--bdr);
-  box-shadow: 4px 0 32px oklch(0% 0 0 / 35%);
+  box-shadow: var(--shadow-lg);
 }
 
-/* Amber left accent line */
+/* Teal left accent line */
 #sidebar::before {
   content: '';
   position: absolute;
   left: 0; top: 0;
-  width: 2px; height: 100%;
-  background: linear-gradient(180deg, transparent, var(--gold-mid) 30%, var(--gold-hi) 60%, transparent);
+  width: 3px; height: 100%;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    var(--acc-mid) 20%,
+    var(--acc-hi) 50%,
+    var(--acc-mid) 80%,
+    transparent 100%
+  );
   pointer-events: none;
 }
 
@@ -253,7 +268,7 @@ html, body {
 .brand-icon {
   width: 20px; height: 20px;
   flex-shrink: 0;
-  color: var(--gold);
+  color: var(--acc);
 }
 
 .brand-text {
@@ -300,15 +315,15 @@ html, body {
   border-color: var(--bdr);
 }
 .head-icon-btn:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--acc);
   outline-offset: 2px;
 }
 
 .conn-badge {
-  width: 26px; height: 26px;
+  width: 36px; height: 36px;
   display: flex; align-items: center; justify-content: center;
-  background: oklch(72% 0.16 148 / 8%);
-  border: 1px solid oklch(72% 0.16 148 / 20%);
+  background: oklch(48% 0.17 148 / 8%);
+  border: 1px solid oklch(48% 0.17 148 / 22%);
   border-radius: var(--r1);
 }
 
@@ -316,7 +331,7 @@ html, body {
   width: 7px; height: 7px;
   border-radius: 50%;
   background: var(--green);
-  box-shadow: 0 0 8px var(--green);
+  box-shadow: 0 0 6px var(--green);
   animation: pulse 2.5s ease-in-out infinite;
 }
 
@@ -387,25 +402,24 @@ html, body {
   border-radius: var(--r2);
   color: var(--t2);
   cursor: pointer;
-  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease), transform 0.12s var(--ease-out);
   position: relative;
   overflow: hidden;
 }
-
 .utype-btn:hover {
   background: var(--bg-3);
-  border-color: oklch(42% 0.04 255 / 80%);
+  border-color: var(--bdr-hi);
   color: var(--t1);
+  transform: translateY(-1px);
 }
 .utype-btn:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--acc);
   outline-offset: 2px;
 }
-
 .utype-btn.active {
-  background: var(--gold-dim);
+  background: var(--acc-dim);
   border-color: var(--bdr-hi);
-  color: var(--gold);
+  color: var(--acc);
 }
 
 .utype-icon {
@@ -427,9 +441,7 @@ html, body {
   color: var(--t3);
   font-variant-numeric: tabular-nums;
 }
-.utype-btn.active .utype-count {
-  color: var(--gold-xs);
-}
+.utype-btn.active .utype-count { color: var(--acc-xs); }
 
 /* ── Unit search & list ─────────────────────────────────── */
 .search-wrap {
@@ -460,8 +472,8 @@ html, body {
   transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 .search-input::placeholder { color: var(--t3); }
-.search-input:hover { border-color: oklch(38% 0.03 255 / 80%); }
-.search-input:focus { border-color: var(--bdr-hi); box-shadow: 0 0 0 3px var(--gold-dim); }
+.search-input:hover { border-color: var(--bdr-hi); }
+.search-input:focus { border-color: var(--bdr-hi); box-shadow: 0 0 0 3px var(--acc-dim); }
 
 .unit-list-sel {
   width: 100%;
@@ -488,11 +500,8 @@ html, body {
   cursor: pointer;
 }
 .unit-list-sel option:checked {
-  background: var(--gold-dim);
-  color: var(--gold);
-}
-.unit-list-sel option:hover {
-  background: var(--bg-3);
+  background: var(--acc-dim);
+  color: var(--acc);
 }
 
 /* ── Custom polygon section ─────────────────────────────── */
@@ -530,12 +539,12 @@ html, body {
 }
 .file-upload-label:hover {
   border-color: var(--bdr-hi);
-  background: var(--gold-dim);
-  color: var(--gold);
+  background: var(--acc-dim);
+  color: var(--acc);
 }
 .file-upload-label input { display: none; }
 
-/* Visually hidden — accessible to screen readers, invisible on screen */
+/* Visually hidden — accessible to screen readers */
 .visually-hidden {
   position: absolute;
   width: 1px; height: 1px;
@@ -573,10 +582,10 @@ html, body {
   top: 2px; left: 2px;
   transition: transform var(--dur) var(--ease), background var(--dur) var(--ease);
 }
-.toggle-row input:checked + .track { background: var(--gold-dim); border-color: var(--bdr-hi); }
-.toggle-row input:checked + .track::after { transform: translateX(13px); background: var(--gold); }
+.toggle-row input:checked + .track { background: var(--acc-dim); border-color: var(--bdr-hi); }
+.toggle-row input:checked + .track::after { transform: translateX(13px); background: var(--acc); }
 .toggle-row input:focus-visible + .track {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--acc);
   outline-offset: 2px;
 }
 
@@ -591,52 +600,54 @@ html, body {
   font-size: 10px;
   font-weight: 600;
   padding: 3px 9px;
-  background: var(--gold-dim);
+  background: var(--acc-dim);
   border: 1px solid var(--bdr-hi);
   border-radius: var(--pill);
-  color: var(--gold);
+  color: var(--acc);
   white-space: nowrap;
 }
 
 /* ── Indicator grid ─────────────────────────────────────── */
 .indicator-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 5px;
 }
 
 .ind-btn {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: 8px 9px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 13px;
   background: var(--bg-2);
   border: 1px solid var(--bdr);
-  border-radius: var(--r1);
+  border-radius: var(--r2);
   color: var(--t2);
   cursor: pointer;
   text-align: left;
-  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease), transform 0.12s var(--ease-out);
 }
 .ind-btn:hover {
   background: var(--bg-3);
-  border-color: oklch(38% 0.03 255 / 80%);
+  border-color: var(--bdr-hi);
   color: var(--t1);
+  transform: translateY(-1px);
 }
 .ind-btn:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--acc);
   outline-offset: 2px;
 }
 .ind-btn.active {
-  background: var(--gold-dim);
+  background: var(--acc-dim);
   border-color: var(--bdr-hi);
-  color: var(--gold);
+  color: var(--acc);
 }
 
 .ind-name {
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1;
 }
@@ -647,7 +658,7 @@ html, body {
   color: var(--t3);
   font-variant-numeric: tabular-nums;
 }
-.ind-btn.active .ind-unit { color: var(--gold-lo); }
+.ind-btn.active .ind-unit { color: var(--acc-lo); }
 
 /* ── Normal segmented control ───────────────────────────── */
 .normal-segs {
@@ -677,13 +688,14 @@ html, body {
 }
 .norm-btn:hover { background: var(--bg-3); color: var(--t1); }
 .norm-btn:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--acc);
   outline-offset: 2px;
 }
 .norm-btn.active {
-  background: var(--gold-mid);
-  color: var(--gold);
-  font-weight: 500;
+  background: var(--acc-mid);
+  color: var(--acc);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
 }
 
 /* ── Sidebar footer ─────────────────────────────────────── */
@@ -724,10 +736,10 @@ html, body {
 .btn-calc {
   width: 100%;
   padding: 11px 16px;
-  background: var(--gold);
+  background: var(--acc);
   border: none;
   border-radius: var(--r2);
-  color: var(--bg);
+  color: oklch(98% 0.004 165);
   font-family: var(--font-display);
   font-size: 13px;
   font-weight: 700;
@@ -739,24 +751,24 @@ html, body {
   gap: 8px;
   position: relative;
   overflow: hidden;
-  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  transition: opacity var(--dur) var(--ease), transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
 }
 .btn-calc::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: oklch(100% 0 0 / 12%);
+  background: oklch(100% 0 0 / 14%);
   opacity: 0;
   transition: opacity var(--dur) var(--ease);
 }
 .btn-calc:hover::before { opacity: 1; }
 .btn-calc:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 20px oklch(76% 0.13 72 / 35%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px oklch(42% 0.14 165 / 30%);
 }
 .btn-calc:active { transform: none; box-shadow: none; }
 .btn-calc:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--acc);
   outline-offset: 3px;
 }
 .btn-calc:disabled {
@@ -772,7 +784,7 @@ html, body {
 }
 .btn-calc--batch:hover {
   background: var(--bg-3);
-  box-shadow: 0 4px 16px oklch(0% 0 0 / 25%);
+  box-shadow: var(--shadow-md);
 }
 
 /* Loading state */
@@ -795,7 +807,7 @@ html, body {
 }
 .icon-btn:hover { background: var(--bg-3); color: var(--t1); }
 .icon-btn:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--acc);
   outline-offset: 2px;
 }
 
@@ -807,7 +819,7 @@ html, body {
   top: 12px;
   z-index: 850;
   width: 40px; height: 40px;
-  background: oklch(11% 0.02 255 / 92%);
+  background: oklch(99% 0.003 90 / 94%);
   border: 1px solid var(--bdr);
   border-radius: var(--r2);
   color: var(--t1);
@@ -815,12 +827,12 @@ html, body {
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(16px);
-  box-shadow: 0 4px 20px oklch(0% 0 0 / 40%);
-  transition: background var(--dur) var(--ease);
+  box-shadow: var(--shadow-md);
+  transition: background var(--dur) var(--ease), transform 0.14s var(--ease-out);
 }
-.mobile-sidebar-btn:hover { background: var(--bg-3); }
+.mobile-sidebar-btn:hover { background: var(--bg-3); transform: scale(1.04); }
 .mobile-sidebar-btn:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--acc);
   outline-offset: 2px;
 }
 
@@ -833,14 +845,14 @@ html, body {
   bottom: 0; right: 0;
   height: 58vh;
   z-index: 700;
-  background: oklch(11% 0.02 255 / 96%);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
+  background: oklch(99.5% 0.003 90 / 97%);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
   border-top: 1px solid var(--bdr);
   border-radius: 16px 16px 0 0;
-  box-shadow: 0 -8px 48px oklch(0% 0 0 / 55%);
+  box-shadow: 0 -4px 32px oklch(18% 0.018 255 / 10%), 0 -1px 0 var(--bdr);
   transform: translateY(100%);
-  transition: transform 0.32s var(--ease-out);
+  transition: transform 0.36s var(--ease-out);
   display: flex;
   flex-direction: column;
 }
@@ -882,14 +894,14 @@ html, body {
   font-size: 11px;
   font-weight: 400;
   padding: 4px 12px;
-  background: oklch(72% 0.16 148 / 8%);
-  border: 1px solid oklch(72% 0.16 148 / 25%);
+  background: oklch(48% 0.17 148 / 8%);
+  border: 1px solid oklch(48% 0.17 148 / 25%);
   border-radius: var(--pill);
   color: var(--green);
   cursor: pointer;
   transition: background var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
-.btn-export:hover { background: oklch(72% 0.16 148 / 16%); box-shadow: 0 0 12px oklch(72% 0.16 148 / 15%); }
+.btn-export:hover { background: oklch(48% 0.17 148 / 16%); box-shadow: 0 0 12px oklch(48% 0.17 148 / 12%); }
 
 .sheet-scroll {
   flex: 1;
@@ -929,7 +941,7 @@ html, body {
 
 .summary-unit-name {
   font-family: var(--font-display);
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--t1);
   line-height: 1.1;
@@ -950,7 +962,7 @@ html, body {
 }
 
 .metric-card {
-  padding: 12px 12px 10px;
+  padding: 14px 13px 11px;
   background: var(--bg-2);
   border: 1px solid var(--bdr);
   border-radius: var(--r2);
@@ -959,16 +971,22 @@ html, body {
   gap: 4px;
   position: relative;
   overflow: hidden;
+  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+.metric-card.mc-active {
+  border-color: var(--bdr-hi);
+  box-shadow: var(--shadow-sm);
+  background: var(--bg-1);
 }
 
 .metric-card::before {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 2px;
+  height: 3px;
 }
-.metric-card.mc-old::before  { background: var(--c-old); }
-.metric-card.mc-new::before  { background: var(--c-new); }
+.metric-card.mc-old::before    { background: var(--c-old); }
+.metric-card.mc-new::before    { background: var(--c-new); }
 .metric-card.mc-future::before { background: var(--c-future); }
 
 .mc-period {
@@ -1017,13 +1035,13 @@ html, body {
   border: 1px solid;
 }
 .delta-chip.pos {
-  background: oklch(72% 0.16 148 / 8%);
-  border-color: oklch(72% 0.16 148 / 25%);
+  background: oklch(48% 0.17 148 / 8%);
+  border-color: oklch(48% 0.17 148 / 25%);
   color: var(--green);
 }
 .delta-chip.neg {
-  background: oklch(66% 0.19 25 / 8%);
-  border-color: oklch(66% 0.19 25 / 25%);
+  background: oklch(50% 0.19 25 / 8%);
+  border-color: oklch(50% 0.19 25 / 25%);
   color: var(--red);
 }
 .delta-chip.neutral {
@@ -1055,7 +1073,7 @@ html, body {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--t3);
-  background: var(--bg);
+  background: var(--bg-2);
   border-bottom: 1px solid var(--bdr);
 }
 
@@ -1063,13 +1081,13 @@ html, body {
   padding: 9px 12px;
   color: var(--t2);
   font-weight: 300;
-  border-bottom: 1px solid oklch(26% 0.022 255 / 35%);
+  border-bottom: 1px solid oklch(84% 0.012 90 / 60%);
   transition: background var(--dur) var(--ease);
 }
 #resultsTable tbody tr:last-child td { border-bottom: none; }
 #resultsTable tbody tr:hover td { background: var(--bg-2); color: var(--t1); }
 #resultsTable tbody td:first-child { color: var(--t1); font-weight: 400; }
-#resultsTable tbody td:last-child { color: var(--gold); font-weight: 500; }
+#resultsTable tbody td:last-child { color: var(--acc); font-weight: 600; }
 
 /* ── Chart area ─────────────────────────────────────────── */
 .chart-area {
@@ -1103,30 +1121,40 @@ html, body {
   transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 #chart-mode-toggle button:hover {
-  border-color: oklch(38% 0.03 255 / 80%);
+  border-color: var(--bdr-hi);
   color: var(--t1);
 }
 #chart-mode-toggle button.active {
-  background: var(--gold-dim);
+  background: var(--acc-dim);
   border-color: var(--bdr-hi);
-  color: var(--gold);
+  color: var(--acc);
 }
 #chart-mode-toggle button:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--acc);
   outline-offset: 2px;
 }
+
+/* ── Map unit tooltip ───────────────────────────────────── */
+.unit-tooltip {
+  background: var(--bg-1);
+  border: 1px solid var(--bdr);
+  color: var(--t1);
+  font-family: var(--font-body);
+  font-size: 12px;
+  padding: 5px 9px;
+  border-radius: var(--r1);
+  box-shadow: var(--shadow-md);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.unit-tooltip::before { display: none; }
 
 /* ============================================================
    TABLET RESPONSIVE (768px – 1024px)
    ============================================================ */
 @media (min-width: 768px) and (max-width: 1024px) {
   :root { --sidebar-w: 260px; }
-
-  .utype-grid { grid-template-columns: repeat(3, 1fr); }
-  .indicator-grid { grid-template-columns: 1fr 1fr; }
-
   .metric-cards { grid-template-columns: repeat(3, 1fr); }
-
   #resultsSheet { height: 52vh; }
 }
 
@@ -1136,7 +1164,7 @@ html, body {
 @media (max-width: 767px) {
   #sidebar {
     transform: translateX(-100%);
-    transition: transform 0.28s var(--ease-out);
+    transition: transform 0.32s var(--ease-out);
     z-index: 1000;
   }
   #sidebar.open {
@@ -1144,9 +1172,7 @@ html, body {
   }
   #sidebar.open .sidebar-close-btn { display: flex; }
 
-  #map {
-    left: 0;
-  }
+  #map { left: 0; }
 
   #mapSwitcher {
     left: 60px;
@@ -1174,7 +1200,6 @@ html, body {
   .mc-value { font-size: 18px; }
 
   .utype-grid { grid-template-columns: repeat(3, 1fr); }
-
   .indicator-grid { grid-template-columns: 1fr 1fr; }
 }
 
@@ -1184,35 +1209,15 @@ html, body {
   .metric-cards { grid-template-columns: 1fr; }
 }
 
-/* ── Map unit tooltip ───────────────────────────────────── */
-.unit-tooltip {
-  background: color-mix(in oklch, var(--bg-2), transparent 8%);
-  border: 1px solid var(--bdr);
-  color: var(--t1);
-  font-family: var(--font-body);
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: var(--r1);
-  box-shadow: 0 2px 8px oklch(0% 0 0 / 40%);
-  white-space: nowrap;
-}
-.unit-tooltip::before { display: none; }
-
 /* ============================================================
    REDUCED MOTION
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  /* Keep the sidebar + sheet slides functional (instant snap) */
-  #sidebar,
-  #resultsSheet {
-    transition: none !important;
-  }
+  #sidebar, #resultsSheet { transition: none !important; }
 }

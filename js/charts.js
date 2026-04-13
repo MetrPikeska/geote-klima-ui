@@ -12,14 +12,14 @@ ClimateApp.charts = (function () {
   const MONTH_LABELS = ['Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čer', 'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro'];
 
   const PALETTE = {
-    old:    { line: 'rgba(59, 130, 246, 1)',   fill: 'rgba(59, 130, 246, 0.15)',  bar: 'rgba(59, 130, 246, 0.4)'  },
-    new:    { line: 'rgba(16, 185, 129, 1)',   fill: 'rgba(16, 185, 129, 0.15)',  bar: 'rgba(16, 185, 129, 0.4)'  },
-    future: { line: 'rgba(239, 68, 68, 1)',    fill: 'rgba(239, 68, 68, 0.15)',   bar: 'rgba(239, 68, 68, 0.4)'   },
+    old:    { line: 'oklch(50% 0.18 240)',   fill: 'oklch(50% 0.18 240 / 14%)',  bar: 'oklch(50% 0.18 240 / 38%)' },
+    new:    { line: 'oklch(48% 0.17 148)',   fill: 'oklch(48% 0.17 148 / 14%)',  bar: 'oklch(48% 0.17 148 / 38%)' },
+    future: { line: 'oklch(56% 0.17 40)',    fill: 'oklch(56% 0.17 40 / 14%)',   bar: 'oklch(56% 0.17 40 / 38%)'  },
   };
 
-  const GRID  = 'rgba(148, 163, 184, 0.15)';
-  const TICK  = '#94a3b8';
-  const TITLE_COLOR = '#e5e7eb';
+  const GRID  = 'oklch(84% 0.012 90)';
+  const TICK  = 'oklch(55% 0.018 255)';
+  const TITLE_COLOR = 'oklch(22% 0.018 255)';
 
   function baseScaleY(title, position = 'left') {
     return {
@@ -258,8 +258,8 @@ ClimateApp.charts = (function () {
           {
             label: indicatorLabel,
             data: indexVals,
-            borderColor: 'rgba(56, 189, 248, 1)',
-            backgroundColor: 'rgba(56, 189, 248, 0.12)',
+            borderColor: 'oklch(42% 0.14 165)',
+            backgroundColor: 'oklch(42% 0.14 165 / 10%)',
             fill: true,
             borderWidth: 2.5,
             tension: 0.3,
@@ -270,7 +270,7 @@ ClimateApp.charts = (function () {
           {
             label: 'Teplota',
             data: Tvals,
-            borderColor: 'rgba(251, 191, 36, 0.85)',
+            borderColor: 'oklch(56% 0.17 40)',
             borderDash: [5, 3],
             borderWidth: 1.5,
             tension: 0.3,
@@ -282,8 +282,8 @@ ClimateApp.charts = (function () {
             label: 'Srážky',
             type: 'bar',
             data: Rvals,
-            backgroundColor: 'rgba(99, 179, 237, 0.25)',
-            borderColor: 'rgba(99, 179, 237, 0.6)',
+            backgroundColor: 'oklch(50% 0.18 240 / 22%)',
+            borderColor: 'oklch(50% 0.18 240 / 55%)',
             borderWidth: 1,
             yAxisID: 'yR',
           },

@@ -13,7 +13,7 @@ ClimateApp.map = (function () {
   let unitLayer;
   let allUnitsLayer = null;
   let highlightedLeafletLayer = null;
-  let activeLayerKey = 'dark';
+  let activeLayerKey = 'osm';
 
   // === S-JTSK (EPSG:5514) definition ===
   if (typeof proj4 !== 'undefined') {
@@ -128,8 +128,8 @@ ClimateApp.map = (function () {
     L.control.zoom({ position: 'topright' }).addTo(map);
     L.control.scale({ position: 'bottomright', imperial: false }).addTo(map);
 
-    // Initial base layer
-    currentBaseLayer = LAYERS.dark().addTo(map);
+    // Initial base layer (OSM matches light theme)
+    currentBaseLayer = LAYERS.osm().addTo(map);
 
     drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
@@ -142,7 +142,7 @@ ClimateApp.map = (function () {
         polygon: {
           allowIntersection: false,
           showArea: true,
-          shapeOptions: { color: '#38bdf8', weight: 2 },
+          shapeOptions: { color: 'oklch(42% 0.14 165)', weight: 2, fillOpacity: 0.12 },
         },
       },
       edit: { featureGroup: drawnItems },
@@ -172,9 +172,10 @@ ClimateApp.map = (function () {
     highlightedLeafletLayer = null;
     if (!units || units.length === 0) return;
 
-    const STYLE_DEFAULT  = { color: '#38bdf8', weight: 1,   fillColor: '#38bdf8', fillOpacity: 0.07 };
-    const STYLE_HOVER    = { color: '#38bdf8', weight: 1.5, fillColor: '#38bdf8', fillOpacity: 0.22 };
-    const STYLE_SELECTED = { color: '#a78bfa', weight: 2.5, fillColor: '#a78bfa', fillOpacity: 0.30 };
+    const ACC = '#1a6b58'; // forest teal — matches CSS --acc
+    const STYLE_DEFAULT  = { color: ACC, weight: 0.8, fillColor: ACC, fillOpacity: 0.04, opacity: 0.55 };
+    const STYLE_HOVER    = { color: ACC, weight: 1.8, fillColor: ACC, fillOpacity: 0.16, opacity: 1 };
+    const STYLE_SELECTED = { color: ACC, weight: 2.5, fillColor: ACC, fillOpacity: 0.26, opacity: 1 };
 
     const features = units.map(u => ({
       type: 'Feature',
@@ -188,15 +189,31 @@ ClimateApp.map = (function () {
       onEachFeature(feature, layer) {
         layer._unit = feature._unit || units.find(u => String(u.id) === String(feature.properties.id));
 
+        // Tooltip: bind without sticky — open/close manually to prevent accumulation
+        layer.bindTooltip(feature.properties.label, {
+          permanent: false,
+          sticky: false,
+          className: 'unit-tooltip',
+          direction: 'top',
+          offset: [0, -6],
+        });
+
         layer.on({
           mouseover(e) {
             if (e.target !== highlightedLeafletLayer) e.target.setStyle(STYLE_HOVER);
             e.target.bringToFront();
+            e.target.openTooltip();
           },
           mouseout(e) {
             if (e.target !== highlightedLeafletLayer) allUnitsLayer.resetStyle(e.target);
+            e.target.closeTooltip();
           },
           click(e) {
+            // Stop propagation to prevent bounding-box focus ring
+            L.DomEvent.stopPropagation(e);
+            if (e.originalEvent) e.originalEvent.stopPropagation();
+            e.target.closeTooltip();
+
             if (highlightedLeafletLayer) allUnitsLayer.resetStyle(highlightedLeafletLayer);
             highlightedLeafletLayer = e.target;
             e.target.setStyle(STYLE_SELECTED);
@@ -204,15 +221,14 @@ ClimateApp.map = (function () {
             if (onUnitClick && layer._unit) onUnitClick(layer._unit);
           },
         });
-
-        layer.bindTooltip(feature.properties.label, { sticky: true, className: 'unit-tooltip' });
       },
     }).addTo(map);
   }
 
   function highlightUnitOnMap(unitId) {
     if (!allUnitsLayer) return;
-    const STYLE_SELECTED = { color: '#a78bfa', weight: 2.5, fillColor: '#a78bfa', fillOpacity: 0.30 };
+    const ACC = '#1a6b58';
+    const STYLE_SELECTED = { color: ACC, weight: 2.5, fillColor: ACC, fillOpacity: 0.26, opacity: 1 };
     allUnitsLayer.eachLayer(layer => {
       if (layer._unit && String(layer._unit.id) === String(unitId)) {
         if (highlightedLeafletLayer) allUnitsLayer.resetStyle(highlightedLeafletLayer);
@@ -229,7 +245,7 @@ ClimateApp.map = (function () {
   function showUnitGeometry(geom) {
     if (unitLayer) { map.removeLayer(unitLayer); unitLayer = null; }
     unitLayer = L.geoJSON(geom, {
-      style: { color: '#a855f7', weight: 2, fillOpacity: 0.15 },
+      style: { color: '#1a6b58', weight: 2, fillOpacity: 0.12 },
     }).addTo(map);
     map.fitBounds(unitLayer.getBounds());
   }
@@ -254,7 +270,7 @@ ClimateApp.map = (function () {
           geojson = convertToWGS84IfNeeded(geojson);
           drawnItems.clearLayers();
           const layer = L.geoJSON(geojson, {
-            style: { color: '#38bdf8', weight: 2, fillOpacity: 0.2 },
+            style: { color: '#1a6b58', weight: 2, fillOpacity: 0.12 },
           }).addTo(drawnItems);
           ClimateApp.state.customPolygon = geojson;
           map.fitBounds(layer.getBounds());

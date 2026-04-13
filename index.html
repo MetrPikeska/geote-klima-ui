@@ -34,8 +34,8 @@
 
   <!-- ── MAP TYPE SWITCHER ─────────────────────────────── -->
   <div id="mapSwitcher">
-    <button class="map-btn active" data-layer="dark" data-i18n="map.dark">Mapa</button>
-    <button class="map-btn" data-layer="osm" data-i18n="map.osm">OSM</button>
+    <button class="map-btn" data-layer="dark" data-i18n="map.dark">Mapa</button>
+    <button class="map-btn active" data-layer="osm" data-i18n="map.osm">OSM</button>
     <button class="map-btn" data-layer="ortofoto" data-i18n="map.aerial">Letecká</button>
     <button class="map-btn" data-layer="katastr" data-i18n="map.cadastre">Katastr</button>
   </div>
@@ -197,59 +197,15 @@
           <div class="indicator-grid" id="indicatorGrid">
 
             <button class="ind-btn active" data-key="demartonne"
-                    data-i18n-title="ind.demartonne.title"
                     title="De Martonne index aridity: AI = R / (T + 10)">
-              <span class="ind-name" data-i18n="ind.demartonne">De Martonne</span>
-              <span class="ind-unit">AI</span>
-            </button>
-
-            <button class="ind-btn" data-key="ldf"
-                    data-i18n-title="ind.ldf.title"
-                    title="Langův dešťový faktor: LDF = R / T">
-              <span class="ind-name" data-i18n="ind.ldf">Lang LDF</span>
-              <span class="ind-unit">—</span>
+              <span class="ind-name">De Martonne</span>
+              <span class="ind-unit">AI = R / (T+10)</span>
             </button>
 
             <button class="ind-btn" data-key="pet"
-                    data-i18n-title="ind.pet.title"
                     title="Potenciální evapotranspirace — Thornthwaite">
-              <span class="ind-name" data-i18n="ind.pet">PET</span>
-              <span class="ind-unit">mm/r</span>
-            </button>
-
-            <button class="ind-btn" data-key="vpd"
-                    data-i18n-title="ind.vpd.title"
-                    title="Vapor Pressure Deficit">
-              <span class="ind-name" data-i18n="ind.vpd">VPD</span>
-              <span class="ind-unit">kPa</span>
-            </button>
-
-            <button class="ind-btn" data-key="mvj"
-                    data-i18n-title="ind.mvj.title"
-                    title="Minářova vláhová jistota (veg. období 4–9)">
-              <span class="ind-name" data-i18n="ind.mvj">MVJ</span>
-              <span class="ind-unit">%</span>
-            </button>
-
-            <button class="ind-btn" data-key="kiz"
-                    data-i18n-title="ind.kiz.title"
-                    title="Končekův index zavlažení (léto 6–8)">
-              <span class="ind-name" data-i18n="ind.kiz">KIZ</span>
-              <span class="ind-unit">mm</span>
-            </button>
-
-            <button class="ind-btn" data-key="deltasra"
-                    data-i18n-title="ind.deltasra.title"
-                    title="Rozdíl srážek mezi normálami (Δ mm / %)">
-              <span class="ind-name" data-i18n="ind.deltasra">Δ Srážky</span>
-              <span class="ind-unit">mm</span>
-            </button>
-
-            <button class="ind-btn" data-key="deltat"
-                    data-i18n-title="ind.deltat.title"
-                    title="Rozdíl teplot mezi normálami (Δ °C)">
-              <span class="ind-name" data-i18n="ind.deltat">Δ Teplota</span>
-              <span class="ind-unit">°C</span>
+              <span class="ind-name">PET Thornthwaite</span>
+              <span class="ind-unit">mm / rok</span>
             </button>
 
           </div>
