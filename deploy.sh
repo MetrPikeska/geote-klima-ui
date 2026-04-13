@@ -29,7 +29,7 @@ cp "$DIR/css/style.css" "$DIST/css/style.css"
 echo "✓ css/style.css"
 
 # JS — všechny soubory kromě config.js (ten nahrazuje config.production.js)
-for f in api.js compute.js charts.js map.js ui.js; do
+for f in i18n.js api.js compute.js charts.js map.js ui.js; do
   cp "$DIR/js/$f" "$DIST/js/$f"
   echo "✓ js/$f"
 done
