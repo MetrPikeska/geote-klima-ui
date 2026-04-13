@@ -1,16 +1,17 @@
 {
-  "rewrites": [
+  "routes": [
     {
-      "source": "/units/:path*",
-      "destination": "https://truly-frequently-dice-markets.trycloudflare.com/units/:path*"
+      "src": "/units/(.*)",
+      "dest": "https://truly-frequently-dice-markets.trycloudflare.com/units/$1"
     },
     {
-      "source": "/climate/:path*",
-      "destination": "https://truly-frequently-dice-markets.trycloudflare.com/climate/:path*"
+      "src": "/climate/(.*)",
+      "dest": "https://truly-frequently-dice-markets.trycloudflare.com/climate/$1"
     },
     {
-      "source": "/health",
-      "destination": "https://truly-frequently-dice-markets.trycloudflare.com/health"
-    }
+      "src": "/health",
+      "dest": "https://truly-frequently-dice-markets.trycloudflare.com/health"
+    },
+    { "handle": "filesystem" }
   ]
 }
