@@ -1,4 +1,5 @@
 import hashlib
+import httpx
 import json
 import logging
 import os
@@ -7,7 +8,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, field_validator
@@ -21,6 +22,24 @@ load_dotenv()
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("geote")
+
+# ── Telegram ─────────────────────────────────────────────────
+TG_TOKEN   = os.getenv("TELEGRAM_TOKEN")
+TG_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
+async def tg(text: str) -> None:
+    """Pošle zprávu na Telegram. Nikdy neshodí request."""
+    if not TG_TOKEN or not TG_CHAT_ID:
+        return
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage",
+                json={"chat_id": TG_CHAT_ID, "text": text, "parse_mode": "HTML"},
+                timeout=5,
+            )
+    except Exception as e:
+        log.warning("Telegram notify failed: %s", e)
 
 # ── Rate limiting ────────────────────────────────────────────
 limiter = Limiter(key_func=get_remote_address)
@@ -364,7 +383,7 @@ async def health():
 
 @app.get("/units/{unit_type}")
 @limiter.limit("30/minute")
-async def get_units(request: Request, unit_type: str):
+async def get_units(request: Request, unit_type: str, background_tasks: BackgroundTasks):
     cfg = UNIT_TYPES.get(unit_type)
     if not cfg:
         raise HTTPException(
@@ -408,6 +427,14 @@ async def get_units(request: Request, unit_type: str):
             "properties": {"label": row["label"]},
         })
 
+    ip = request.client.host if request.client else "?"
+    log.info("Units request: type=%s features=%d ip=%s", unit_type, len(features), ip)
+    background_tasks.add_task(tg,
+        f"🗺 <b>Načtení jednotek</b>\n"
+        f"Typ: <code>{unit_type}</code> ({len(features)} položek)\n"
+        f"IP: <code>{ip}</code>"
+    )
+
     return {
         "type": "FeatureCollection",
         "features": features,
@@ -419,6 +446,7 @@ async def get_units(request: Request, unit_type: str):
 async def climate_polygon(
     request: Request,
     body: PolygonRequest,
+    background_tasks: BackgroundTasks,
     export: str | None = Query(default=None),
 ):
     # ── Body size guard ───────────────────────────────────────
@@ -451,11 +479,19 @@ async def climate_polygon(
                 log.warning("Batch item %d error (IP %s): %s", i, ip, e)
                 results.append({"index": i, "error": "Chyba výpočtu", "unitName": lbl})
 
+        total_ms = int((time.monotonic() - t0) * 1000)
+        ok = sum(1 for r in results if "error" not in r)
+        background_tasks.add_task(tg,
+            f"📦 <b>Dávkový výpočet</b>\n"
+            f"Jednotek: {len(body.geometries)} (OK: {ok})\n"
+            f"Čas: {total_ms} ms\n"
+            f"IP: <code>{ip}</code>"
+        )
         return {
             "batch": True,
             "count": len(body.geometries),
             "results": results,
-            "totalTimeMs": int((time.monotonic() - t0) * 1000),
+            "totalTimeMs": total_ms,
         }
 
     # ── Single ────────────────────────────────────────────────
@@ -464,9 +500,9 @@ async def climate_polygon(
 
     geom = extract_geometry(body.geometry)
     validate_geometry(geom)
-    log.info("Climate request: label=%s vertices=%d ip=%s", body.label, count_vertices(geom), ip)
+    vertices = count_vertices(geom)
+    log.info("Climate request: label=%s vertices=%d ip=%s", body.label, vertices, ip)
 
-    geom = extract_geometry(body.geometry)
     result = await compute_climate(pool, geom, body.label)
 
     if not result:
@@ -497,4 +533,12 @@ async def climate_polygon(
         }
         return JSONResponse(content=fc, media_type="application/geo+json")
 
-    return {**result, "currentResponseTime": int((time.monotonic() - t0) * 1000)}
+    elapsed_ms = int((time.monotonic() - t0) * 1000)
+    cached_str = "✅ cache" if result.get("cached") else f"🔄 výpočet {result.get('computationTimeMs', '?')} ms"
+    background_tasks.add_task(tg,
+        f"🌡 <b>Klimatický výpočet</b>\n"
+        f"Oblast: <b>{body.label or 'Vlastní polygon'}</b>\n"
+        f"Vrcholů: {vertices} | {cached_str}\n"
+        f"IP: <code>{ip}</code>"
+    )
+    return {**result, "currentResponseTime": elapsed_ms}
