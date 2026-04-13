@@ -46,17 +46,17 @@
           </div>
         </div>
         <div class="head-actions">
-          <button id="langToggleBtn" class="head-icon-btn lang-btn" title="Switch language / Přepnout jazyk">EN</button>
+          <button id="langToggleBtn" class="head-icon-btn lang-btn" title="Switch language / Přepnout jazyk" aria-label="Přepnout jazyk / Switch language">EN</button>
           <a href="https://github.com/MetrPikeska/geote-klima-ui" target="_blank" rel="noopener"
              class="head-icon-btn" title="GitHub">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
             </svg>
           </a>
-          <div class="conn-badge" id="connBadge" data-i18n-title="conn.title" title="Stav spojení">
-            <span class="conn-dot"></span>
+          <div class="conn-badge" id="connBadge" data-i18n-title="conn.title" title="Stav spojení" role="status" aria-label="Stav spojení">
+            <span class="conn-dot" aria-hidden="true"></span>
           </div>
-          <button id="sidebarClose" class="head-icon-btn sidebar-close-btn" data-i18n-title="sidebar.close" title="Zavřít panel">
+          <button id="sidebarClose" class="head-icon-btn sidebar-close-btn" data-i18n-title="sidebar.close" title="Zavřít panel" aria-label="Zavřít panel">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
               <path d="M2 2l10 10M12 2L2 12"/>
             </svg>
@@ -171,8 +171,8 @@
         <!-- ── Multi-select toggle ─────────────────── -->
         <div class="s-row" id="multiSelectRow">
           <label class="toggle-row">
-            <input type="checkbox" id="multiSelectMode"/>
-            <span class="track"></span>
+            <input type="checkbox" id="multiSelectMode" class="visually-hidden"/>
+            <span class="track" aria-hidden="true"></span>
             <span class="toggle-label-text" data-i18n="multi.label">Multi-výběr</span>
           </label>
           <span id="selectionCount" class="count-badge" style="display:none">0 vybráno</span>
@@ -259,7 +259,7 @@
       <!-- Footer: status + compute -->
       <div class="sidebar-foot">
         <div class="status-area">
-          <div id="statusMessage" class="status-msg"></div>
+          <div id="statusMessage" class="status-msg" aria-live="polite" aria-atomic="true"></div>
           <div id="stopwatch" class="stopwatch-text"></div>
         </div>
         <button id="computeBtn" class="btn-calc">
@@ -287,7 +287,7 @@
 
   <!-- Mobile sidebar toggle -->
   <button id="mobileSidebarBtn" class="mobile-sidebar-btn"
-          data-i18n-title="mobile.open" aria-label="Otevřít panel">
+          data-i18n-title="mobile.open" aria-label="Otevřít panel" aria-expanded="false" aria-controls="sidebar">
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
       <path d="M3 5h14M3 10h14M3 15h14"/>
     </svg>
@@ -307,7 +307,7 @@
           GeoJSON
         </button>
         <button id="closeSheetBtn" class="icon-btn"
-                data-i18n-title="close.sheet" title="Zavřít">
+                data-i18n-title="close.sheet" title="Zavřít" aria-label="Zavřít výsledky">
           <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
             <path d="M2 2l10 10M12 2L2 12"/>
           </svg>
@@ -368,11 +368,13 @@
   mobileSidebarBtn.addEventListener('click', () => {
     sidebar.classList.add('open');
     mobileSidebarBtn.style.display = 'none';
+    mobileSidebarBtn.setAttribute('aria-expanded', 'true');
   });
 
   sidebarClose.addEventListener('click', () => {
     sidebar.classList.remove('open');
     mobileSidebarBtn.style.display = '';
+    mobileSidebarBtn.setAttribute('aria-expanded', 'false');
   });
 
   function updateSidebarToggleVisibility() {
