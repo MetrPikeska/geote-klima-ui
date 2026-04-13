@@ -2,15 +2,15 @@
   "routes": [
     {
       "src": "/units/(.*)",
-      "dest": "https://truly-frequently-dice-markets.trycloudflare.com/units/$1"
+      "dest": "https://houston-pitch-emerald-violin.trycloudflare.com/units/$1"
     },
     {
       "src": "/climate/(.*)",
-      "dest": "https://truly-frequently-dice-markets.trycloudflare.com/climate/$1"
+      "dest": "https://houston-pitch-emerald-violin.trycloudflare.com/climate/$1"
     },
     {
       "src": "/health",
-      "dest": "https://truly-frequently-dice-markets.trycloudflare.com/health"
+      "dest": "https://houston-pitch-emerald-violin.trycloudflare.com/health"
     },
     { "handle": "filesystem" }
   ]
