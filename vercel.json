@@ -2,15 +2,15 @@
   "routes": [
     {
       "src": "/units/(.*)",
-      "dest": "https://houston-pitch-emerald-violin.trycloudflare.com/units/$1"
+      "dest": "https://packet-folk-subscription-protect.trycloudflare.com/units/$1"
     },
     {
       "src": "/climate/(.*)",
-      "dest": "https://houston-pitch-emerald-violin.trycloudflare.com/climate/$1"
+      "dest": "https://packet-folk-subscription-protect.trycloudflare.com/climate/$1"
     },
     {
       "src": "/health",
-      "dest": "https://houston-pitch-emerald-violin.trycloudflare.com/health"
+      "dest": "https://packet-folk-subscription-protect.trycloudflare.com/health"
     },
     { "handle": "filesystem" }
   ]
