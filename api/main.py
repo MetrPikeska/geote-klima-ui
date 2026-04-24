@@ -85,7 +85,7 @@ class Geometry(BaseModel):
 
 
 class PolygonRequest(BaseModel):
-    geometry: Geometry | None = None
+    geometry: Any | None = None
     geometries: list[Any] | None = None
     label: str | None = None
     labels: list[str] | None = None
